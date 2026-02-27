@@ -1,0 +1,11 @@
+﻿arxiv
+requests
+pandas
+networkx
+plotly
+scikit-learn
+tabulate
+fastapi
+uvicorn
+python-multipart
+pypdf
