@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deepfake Guard</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#fbfbfb;
+    color:black;
+    width:100%;
+    overflow-x:hidden;
+}
+
+/* NAVBAR */
+.navbar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    padding: 10px 15px;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+}
+.navbar.scrolled {
+    border-radius: 35px;
+    margin: 0px 20px;
+    margin-top: 13px;
+    width: auto;
+    z-index: 1000;
+    background: #ffffffbf;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    font-size:20px;
+    font-weight:bold;
+    color:black;
+    text-decoration:none;
+}
+
+.logo img{
+    margin-right:10px;
+}
+
+.nav-links{
+    display:flex;
+    gap:25px;
+    align-items:center;
+}
+
+.nav-links a{
+    text-decoration:none;
+    color:black;
+    font-weight:500;
+}
+
+.nav-links a:hover { color: #2563eb; }
+
+/* ── TOOLS DROPDOWN ── */
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    color: black;
+    cursor: pointer;
+    user-select: none;
+    font-size: 15px;
+    transition: color 0.2s;
+}
+.nav-dropdown-trigger:hover { color: #2563eb; }
+
+.nav-dropdown-trigger .arrow {
+    width: 14px; height: 14px;
+    transition: transform 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.nav-dropdown.open .nav-dropdown-trigger .arrow {
+    transform: rotate(180deg);
+}
+.nav-dropdown-trigger .arrow svg { display: block; }
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    min-width: 210px;
+    padding: 8px;
+    z-index: 999;
+    animation: dropIn 0.18s ease;
+}
+@keyframes dropIn {
+    from { opacity:0; transform: translateX(-50%) translateY(-6px); }
+    to   { opacity:1; transform: translateX(-50%) translateY(0); }
+}
+
+.nav-dropdown.open .dropdown-menu { display: block; }
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 9px;
+    text-decoration: none;
+    color: #111;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+}
+.dropdown-item:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+.dropdown-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+}
+.icon-blue  { background: #eff6ff; }
+.icon-green { background: #f0fdf4; }
+.icon-purple{ background: #f5f3ff; }
+
+.dropdown-item-text { display: flex; flex-direction: column; }
+.dropdown-item-title { font-weight: 600; font-size: 13px; }
+.dropdown-item-sub   { font-size: 11px; color: #9ca3af; font-weight: 400; margin-top: 1px; }
+
+.auth-buttons button{
+    margin-left:10px;
+    padding:8px 18px;
+    border-radius:30px;
+    border:none;
+    cursor:pointer;
+    font-weight: 600;
+}
+
+.login{background:#2563eb;color:white;}
+.register{background:#10b981;color:white;}
+
+/* HERO */
+.hero{
+    text-align:center;
+    margin-top:70px;
+}
+
+.hero h1{
+    font-size: clamp(28px, 5vw, 45px);
+    margin-bottom:10px;
+}
+
+.hero p{
+    color:#6b7280;
+    margin-bottom:15px;
+}
+
+.btn-round{
+    padding:15px 45px;
+    border-radius:50px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+/* VIDEO */
+.video-container{
+    width: 90%;
+    max-width: 1100px;
+    margin:60px auto;
+    border-radius:25px;
+    overflow:hidden;
+}
+
+.video-container video{
+    width:100%;
+    height:auto;
+    border-radius:25px;
+}
+
+/* UPLOAD AREA */
+.upload-area {
+    width: 100%;
+    min-height: 250px;
+    max-height: 400px;
+    border: 2px dashed #d9d9d9;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #fafafa;
+    position: relative;
+}
+
+.upload-area img,
+.upload-area video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 15px;
+}
+
+/* SECTION TEXT */
+.section{
+    text-align:center;
+    margin:80px 0;
+}
+
+/* NEW VOICE SECTION */
+.voice-section{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 60px 8%;
+    flex-wrap: wrap;
+}
+
+.voice-text,
+.voice-image {
+    flex: 1 1 400px;
+}
+
+.voice-text h3 {
+    font-size: 38px;
+    margin-bottom: 9px;
+    margin-top: -10px;
+}
+
+.voice-text p{
+    font-size:18px;
+    color:#555;
+}
+
+.voice-image img{
+    width:100%;
+    max-width:500px;
+    border-radius:25px;
+}
+
+/* STEPS */
+.steps{
+    margin:100px 5%;
+    text-align:center;
+}
+
+.step-card{
+   background: #2563ebf0;
+   color: white;
+   margin: 15px auto;
+   padding: 12px;
+   border-radius: 20px;
+   width: 90%;
+   max-width: 500px;
+}
+
+/* CTA SECTION */
+.cta-section{
+    position:relative;
+    text-align:center;
+    color:white;
+    margin-top:100px;
+    background-color: black;
+    padding-top: 80px;
+    padding-bottom: 140px;
+}
+
+.cta-video{
+    width: 90%;
+    max-width: 1100px;
+    height:auto;
+    object-fit:cover;
+    z-index: 0;
+    border-radius: 20px;
+    margin-bottom: 20px;
+}
+
+.cta-content{
+    position:absolute;
+    top:42%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    max-width:700px;
+}
+
+.cta-tag{
+    display:inline-block;
+    margin-bottom:15px;
+    background:rgba(255,255,255,0.2);
+    padding:6px 15px;
+    border-radius:20px;
+    font-size:14px;
+}
+
+.cta-content h2{
+    font-size:36px;
+    margin:10px 0;
+}
+
+.cta-content p{
+    font-size:18px;
+    margin-bottom:20px;
+}
+
+.cta-btn{
+    padding:12px 30px;
+    border:none;
+    border-radius:30px;
+    background:#2563eb;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+}
+
+/* MAIN FOOTER */
+.main-footer{
+    background:#0f172a;
+    color:white;
+    padding:60px 10%;
+}
+
+.footer-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px,1fr));
+    gap:40px;
+    margin-bottom:40px;
+}
+
+.footer-grid h3{
+    margin-bottom:15px;
+}
+
+.footer-grid a{
+    display:block;
+    color:#cbd5e1;
+    text-decoration:none;
+    margin-bottom:8px;
+    font-size:14px;
+}
+
+.footer-grid a:hover{
+    color:white;
+}
+
+.footer-bottom{
+    text-align:center;
+    border-top:1px solid #1e293b;
+    padding-top:20px;
+    font-size:14px;
+}
+
+/* MODAL */
+.modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.8);
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-content{
+    background:#1f2937;
+    padding:30px;
+    border-radius:20px;
+    width:300px;
+    color:white;
+}
+
+.modal-content input{
+    width:100%;
+    margin-bottom:10px;
+    padding:8px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar" id="navbar">
+    <a href="/" class="logo">
+        <img src="https://cdn.prod.website-files.com/61ead44637176294fdd344ff/644fcb31ce04e75adce61643_Dictionary_Letters_Knockout-04.svg" loading="lazy" alt="Deepfake" height="35px">
+        <span>Deepfake Guard</span>
+    </a>
+
+    <div class="nav-links">
+        <a href="/index">Home</a>
+
+        <!-- TOOLS DROPDOWN -->
+        <div class="nav-dropdown" id="toolsDropdown">
+            <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+                Tools
+                <span class="arrow">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 4l4 4 4-4" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            </div>
+            <div class="dropdown-menu">
+                <a href="/generator" class="dropdown-item">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Video Generator</span>
+                        <span class="dropdown-item-sub">Create deepfake videos</span>
+                    </div>
+                </a>
+                <a href="/voice" class="dropdown-item">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Voice Cloning</span>
+                        <span class="dropdown-item-sub">Clone any voice instantly</span>
+                    </div>
+                </a>
+                <a href="/detector" class="dropdown-item">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Deepfake Detector</span>
+                        <span class="dropdown-item-sub">Detect AI-generated media</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <a href="/pricing">Pricing</a>
+
+        <a href="/about">About</a>
+    </div>
+
+    <div class="auth-buttons">
+        <a href="/signup-login"><button class="login">Login</button></a>
+        <a href="/signup-login"><button class="register">SignUp</button></a>
+    </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+    <h1>Deepfake Maker</h1>
+    <p>Protecting Reality in the Age of AI Manipulation</p>
+    <button class="btn-round" onclick="goToGenerator()">Get Started</button>
+</div>
+
+<!-- VIDEO -->
+<div class="video-container">
+    <video autoplay loop muted>
+        <source src="https://cdn-useast1.kapwing.com/static/zwN-Untitled_Project_V2-(7).mp4" type="video/mp4">
+    </video>
+</div>
+
+<div class="section">
+    <h2>Turn any video into a deepfake</h2>
+    <p>Advanced AI technology for transformation and detection.</p>
+</div>
+
+<div class="video-container">
+    <video autoplay loop muted>
+        <source src="https://cdn-useast1.kapwing.com/static/ZPo-Persona_Liam_Persona_V2.mp4" type="video/mp4">
+    </video>
+</div>
+
+<!-- NEW VOICE SECTION -->
+<div class="voice-section">
+    <div class="voice-text">
+        <h3>10,000+ Deepfake AI Voices & Voice Cloning</h3>
+        <p>Enhance your deepfake videos with over 10,000 AI-generated voices in various tones, accents and styles. You can also clone your own voice with high accuracy.</p>
+    </div>
+    <div class="voice-image">
+        <img src="https://res.jogg.ai/upload/www/voice_clone_63374fcc04.png" alt="Voice Clone">
+    </div>
+</div>
+
+<!-- DEEPFAKE CLONE SECTION -->
+<div class="voice-section" style="flex-direction:row-reverse; gap:40px; padding:60px 10%; flex-wrap:wrap; background:#F9FAFB; border-radius:32px; margin:10px 0;">
+    <div class="voice-text">
+        <h3>Deepfake Clone That Looks Just Like You</h3>
+        <p>Create your own AI twin with Deepfake deepfake cloning technology. It captures your expressions, voice tone, and natural gestures to craft a hyper-realistic avatar.</p>
+    </div>
+    <div class="voice-image" style="text-align:center;">
+        <img src="https://res.jogg.ai/upload/www/clone_yourself_d799f5770e.png" alt="Clone Yourself">
+    </div>
+</div>
+
+
+
+<!-- CTA SECTION -->
+<div class="cta-section">
+    <video autoplay muted loop playsinline class="cta-video"
+        poster="https://cdn-useast1.kapwing.com/static/OOH-Gradient_Motion_Dark_V1.webp">
+        <source src="https://cdn-useast1.kapwing.com/static/4wL-Gradient-Motion-Dark.mp4" type="video/mp4">
+    </video>
+    <div class="cta-content">
+        <span class="cta-tag">Are you ready?</span>
+        <h2>Create something amazing in seconds</h2>
+        <p>Get started with your first video in just a few clicks. Join millions of creators using Deepfake Guard.</p>
+        <button class="cta-btn" onclick="goToGenerator()">Create Deepfake</button>
+    </div>
+</div>
+
+<!-- MAIN FOOTER -->
+<footer class="main-footer">
+    <div class="footer-grid">
+        <div>
+            <h3>Tools</h3>
+            <a href="/generator">Video Generation</a>
+            <a href="/detector">Detection</a>
+            <a href="/voice">Voice Cloning</a>
+        </div>
+        <div>
+            <h3>Website</h3>
+            <a href="/about">About Us</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/about">Contact</a>
+        </div>
+        <div>
+            <h3>Legal</h3>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        © 2026 Deepfake Guard — Made with ♥
+    </div>
+</footer>
+
+<script>
+function goToGenerator() {
+    window.location.href = "/generator";
+}
+
+// Navbar scroll
+window.addEventListener('scroll', function() {
+    const navbar = document.getElementById('navbar');
+    if (window.scrollY > 10) navbar.classList.add('scrolled');
+    else navbar.classList.remove('scrolled');
+});
+
+// Tools dropdown toggle
+function toggleDropdown() {
+    document.getElementById('toolsDropdown').classList.toggle('open');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('toolsDropdown');
+    if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('open');
+    }
+});
+</script>
+
+</body>
+</html>

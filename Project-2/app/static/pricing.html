@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deepfake Guard — Pricing</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+body { background:#fbfbfb; color:#111827; overflow-x:hidden; }
+
+/* ── NAVBAR ── */
+.navbar {
+    position: sticky; top: 0; width: 100%;
+    display: flex; justify-content: space-evenly; align-items: center;
+    padding: 10px 15px; background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 1000;
+}
+.navbar.scrolled {
+    border-radius: 35px; margin: 0px 20px; margin-top: 13px;
+    width: auto; background: #ffffffbf;
+}
+.logo { display:flex; align-items:center; font-size:20px; font-weight:bold; color:black; text-decoration:none; }
+.logo img { margin-right:10px; }
+.nav-links { display:flex; gap:25px; align-items:center; }
+.nav-links a { text-decoration:none; color:black; font-weight:500; }
+.nav-links a:hover { color:#2563eb; }
+.nav-dropdown { position:relative; }
+.nav-dropdown-trigger { display:flex; align-items:center; gap:5px; font-weight:500; color:black; cursor:pointer; user-select:none; font-size:15px; transition:color 0.2s; }
+.nav-dropdown-trigger:hover { color:#2563eb; }
+.nav-dropdown-trigger .arrow { width:14px; height:14px; transition:transform 0.2s; display:flex; align-items:center; justify-content:center; }
+.nav-dropdown.open .nav-dropdown-trigger .arrow { transform:rotate(180deg); }
+.nav-dropdown-trigger .arrow svg { display:block; }
+.dropdown-menu { display:none; position:absolute; top:calc(100% + 12px); left:50%; transform:translateX(-50%); background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.12); min-width:210px; padding:8px; z-index:999; animation:dropIn 0.18s ease; }
+@keyframes dropIn { from{opacity:0;transform:translateX(-50%) translateY(-6px);}to{opacity:1;transform:translateX(-50%) translateY(0);} }
+.nav-dropdown.open .dropdown-menu { display:block; }
+.dropdown-item { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:9px; text-decoration:none; color:#111; font-size:14px; font-weight:500; transition:background 0.15s, color 0.15s; }
+.dropdown-item:hover { background:#eff6ff; color:#2563eb; }
+.dropdown-item.active-tool { background:#eff6ff; color:#2563eb; }
+.dropdown-item-text { display:flex; flex-direction:column; }
+.dropdown-item-title { font-weight:600; font-size:13px; }
+.dropdown-item-sub { font-size:11px; color:#9ca3af; font-weight:400; margin-top:1px; }
+.auth-buttons button { margin-left:10px; padding:8px 18px; border-radius:30px; border:none; cursor:pointer; font-weight:600; }
+.login { background:#2563eb; color:white; }
+.register { background:#10b981; color:white; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+    text-align:center;
+    padding: 56px 20px 0;
+}
+.page-header .eyebrow {
+    display:inline-block;
+    background:#eff6ff;
+    color:#2563eb;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:5px 16px;
+    border-radius:20px;
+    border:1px solid #bfdbfe;
+    margin-bottom:18px;
+}
+.page-header h1 {
+    font-size: clamp(28px,5vw,48px);
+    font-weight:800;
+    line-height:1.15;
+    margin-bottom:14px;
+}
+.page-header h1 span {
+    background:linear-gradient(135deg,#2563eb,#7c3aed);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+.page-header p {
+    color:#6b7280;
+    font-size:16px;
+    max-width:520px;
+    margin:0 auto 32px;
+    line-height:1.6;
+}
+
+/* ── BILLING TOGGLE ── */
+.billing-toggle {
+    display:inline-flex;
+    background:#f3f4f6;
+    border-radius:50px;
+    padding:4px;
+    gap:4px;
+    margin-bottom:48px;
+    border:1px solid #e5e7eb;
+}
+.toggle-btn {
+    padding:8px 24px;
+    border-radius:50px;
+    border:none;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all 0.2s;
+    background:transparent;
+    color:#6b7280;
+}
+.toggle-btn.active {
+    background:white;
+    color:#111827;
+    box-shadow:0 1px 6px rgba(0,0,0,0.12);
+}
+.save-badge {
+    background:#dcfce7;
+    color:#15803d;
+    font-size:10px;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:20px;
+    border:1px solid #bbf7d0;
+    margin-left:6px;
+    vertical-align:middle;
+}
+
+/* ── FEATURE SECTION LABELS ── */
+.features-header {
+    text-align:center;
+    margin: 60px 0 16px;
+    font-size:11px;
+    font-weight:700;
+    color:#9ca3af;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+}
+
+/* ── PLANS GRID ── */
+.plans-wrapper {
+    width:100%;
+    max-width:1200px;
+    margin:0 auto;
+    padding:0 20px 80px;
+}
+
+.plans-grid {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    position:relative;
+}
+
+/* ── PLAN CARD ── */
+.plan-card {
+    background:white;
+    display:flex;
+    flex-direction:column;
+    padding:28px 24px;
+    border:1px solid #e5e7eb;
+    border-radius:16px;
+    position:relative;
+    transition:box-shadow 0.2s, transform 0.2s;
+    box-shadow:0 2px 12px rgba(0,0,0,0.05);
+}
+.plan-card:hover { box-shadow:0 6px 24px rgba(0,0,0,0.1); transform:translateY(-2px); }
+
+/* Popular highlight */
+.plan-card.popular {
+    background:#f8f9ff;
+    border:3px solid #2563eb;
+    z-index:2;
+    margin-top:-32px;
+    padding-top:60px;
+    box-shadow:0 8px 48px rgba(37,99,235,0.18);
+}
+
+.popular-badge {
+    position:absolute;
+    top:0; left:50%;
+    transform:translateX(-50%);
+    background:linear-gradient(90deg,#2563eb,#7c3aed);
+    color:white;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:6px 20px;
+    border-radius:0 0 12px 12px;
+    white-space:nowrap;
+}
+
+/* ── PLAN HEADER ── */
+.plan-name {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:16px;
+    font-weight:700;
+    color:#111827;
+    margin-bottom:4px;
+}
+.plan-icon {
+    width:28px; height:28px;
+    border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px;
+    flex-shrink:0;
+}
+.icon-gray  { background:#f3f4f6; }
+.icon-blue  { background:#eff6ff; }
+.icon-violet{ background:#f5f3ff; }
+.icon-green { background:#f0fdf4; }
+
+.flash-tag {
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    background:#ec4899;
+    color:white;
+    font-size:10px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:6px;
+    margin-left:4px;
+}
+
+/* ── PRICING ROW ── */
+.price-row {
+    display:flex;
+    align-items:flex-end;
+    gap:4px;
+    margin:16px 0 4px;
+}
+.price-original {
+    font-size:16px;
+    font-weight:500;
+    color:#9ca3af;
+    text-decoration:line-through;
+    padding-bottom:4px;
+}
+.price-amount {
+    font-size:34px;
+    font-weight:800;
+    color:#111827;
+    line-height:1;
+}
+.price-period {
+    font-size:13px;
+    color:#9ca3af;
+    font-weight:500;
+    padding-bottom:4px;
+}
+.price-credits {
+    font-size:12px;
+    color:#6b7280;
+    font-weight:500;
+    margin-bottom:20px;
+    min-height:20px;
+}
+.price-credits strong { color:#111827; font-weight:700; }
+
+/* ── DIVIDER ── */
+.plan-divider {
+    width:100%;
+    height:1px;
+    background:#e5e7eb;
+    margin:20px 0;
+}
+
+/* ── FEATURE SECTION TITLE ── */
+.features-title {
+    font-size:12px;
+    font-weight:700;
+    color:#374151;
+    margin-bottom:12px;
+}
+
+/* ── FEATURE ITEMS ── */
+.feature-list {
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    flex:1;
+}
+.feature-item {
+    display:flex;
+    align-items:flex-start;
+    gap:9px;
+    font-size:12px;
+    color:#6b7280;
+    line-height:1.5;
+}
+.feature-check {
+    width:16px; height:16px;
+    border-radius:50%;
+    background:#2563eb;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    margin-top:1px;
+}
+.feature-check svg { width:9px; height:9px; }
+.feature-highlight { color:#2563eb; font-weight:600; }
+.feat-num { color:#111827; font-weight:600; }
+
+/* ── SEAT COUNTER ── */
+.seat-counter {
+    display:flex;
+    align-items:center;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+    overflow:hidden;
+    height:36px;
+    margin-bottom:12px;
+}
+.seat-btn {
+    width:36px; height:36px;
+    display:flex; align-items:center; justify-content:center;
+    background:white; border:none; cursor:pointer;
+    font-size:18px; color:#374151;
+    transition:background 0.15s;
+}
+.seat-btn:hover { background:#f9fafb; }
+.seat-count {
+    flex:1; text-align:center;
+    font-size:13px; font-weight:600; color:#374151;
+    border-left:1px solid #e5e7eb;
+    border-right:1px solid #e5e7eb;
+}
+
+/* ── CTA BUTTON ── */
+.plan-cta {
+    margin-top:20px;
+    width:100%;
+    padding:13px;
+    border-radius:12px;
+    border:1px solid #e5e7eb;
+    background:white;
+    font-size:14px;
+    font-weight:700;
+    color:#374151;
+    cursor:pointer;
+    transition:all 0.2s;
+}
+.plan-cta:hover { background:#f9fafb; border-color:#d1d5db; }
+.plan-cta.primary {
+    background:linear-gradient(135deg,#2563eb,#7c3aed);
+    color:white;
+    border:none;
+}
+.plan-cta.primary:hover { opacity:0.9; }
+
+/* ── WHAT'S INCLUDED STRIP ── */
+.includes-strip {
+    max-width:1200px;
+    margin:0 auto 60px;
+    padding:0 20px;
+}
+.includes-title {
+    text-align:center;
+    font-size:22px;
+    font-weight:800;
+    margin-bottom:32px;
+    color:#111827;
+}
+.includes-title span {
+    background:linear-gradient(135deg,#2563eb,#7c3aed);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+.includes-grid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+}
+.include-card {
+    background:white;
+    border:1px solid #e5e7eb;
+    border-radius:16px;
+    padding:24px;
+    transition:box-shadow 0.2s, transform 0.2s;
+}
+.include-card:hover { box-shadow:0 8px 24px rgba(0,0,0,0.08); transform:translateY(-2px); }
+.include-icon {
+    width:44px; height:44px;
+    border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+    margin-bottom:14px;
+}
+.ic-blue   { background:#eff6ff; }
+.ic-violet { background:#f5f3ff; }
+.ic-pink   { background:#fdf2f8; }
+.include-card h3 { font-size:15px; font-weight:700; color:#111827; margin-bottom:6px; }
+.include-card p  { font-size:12px; color:#6b7280; line-height:1.6; }
+
+/* ── FAQ ── */
+.faq-section {
+    max-width:700px;
+    margin:0 auto 80px;
+    padding:0 20px;
+}
+.faq-title {
+    text-align:center;
+    font-size:22px;
+    font-weight:800;
+    margin-bottom:28px;
+    color:#111827;
+}
+.faq-item {
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    overflow:hidden;
+    margin-bottom:10px;
+    background:white;
+}
+.faq-q {
+    width:100%; display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px; background:none; border:none; cursor:pointer;
+    font-size:14px; font-weight:600; color:#111827; text-align:left;
+    transition:background 0.15s;
+}
+.faq-q:hover { background:#f9fafb; }
+.faq-q .chevron { transition:transform 0.25s; font-size:12px; color:#9ca3af; }
+.faq-item.open .faq-q .chevron { transform:rotate(180deg); }
+.faq-a {
+    max-height:0; overflow:hidden;
+    transition:max-height 0.3s ease, padding 0.2s;
+    font-size:13px; color:#6b7280; line-height:1.7;
+    padding:0 20px;
+}
+.faq-item.open .faq-a { max-height:200px; padding:0 20px 16px; }
+
+/* ── MONTHLY/YEARLY TOGGLE ── */
+.yearly-price { display:none; }
+.monthly-price { display:block; }
+body.yearly .yearly-price { display:block; }
+body.yearly .monthly-price { display:none; }
+
+@media(max-width:900px){
+    .plans-grid { grid-template-columns:1fr 1fr; }
+    .plan-card.popular { margin-top:0; padding-top:48px; }
+    .includes-grid { grid-template-columns:1fr; }
+}
+@media(max-width:560px){
+    .plans-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar" id="navbar">
+    <a href="/" class="logo">
+        <img src="https://cdn.prod.website-files.com/61ead44637176294fdd344ff/644fcb31ce04e75adce61643_Dictionary_Letters_Knockout-04.svg" loading="lazy" alt="Deepfake" height="35px">
+        <span>Deepfake Guard</span>
+    </a>
+
+    <div class="nav-links">
+        <a href="/index">Home</a>
+
+        <!-- TOOLS DROPDOWN -->
+        <div class="nav-dropdown" id="toolsDropdown">
+            <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+                Tools
+                <span class="arrow">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 4l4 4 4-4" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            </div>
+            <div class="dropdown-menu">
+                <a href="/generator" class="dropdown-item">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Video Generator</span>
+                        <span class="dropdown-item-sub">Create deepfake videos</span>
+                    </div>
+                </a>
+                <a href="/voice" class="dropdown-item">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Voice Cloning</span>
+                        <span class="dropdown-item-sub">Clone any voice instantly</span>
+                    </div>
+                </a>
+                <a href="/detector" class="dropdown-item">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Deepfake Detector</span>
+                        <span class="dropdown-item-sub">Detect AI-generated media</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <a href="/pricing">Pricing</a>
+
+        <a href="/about">About</a>
+    </div>
+
+    <div class="auth-buttons">
+        <a href="/signup-login"><button class="login">Login</button></a>
+        <a href="/signup-login"><button class="register">SignUp</button></a>
+    </div>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+    <div class="eyebrow">🔵 Pricing</div>
+    <h1>Choose Your <span>Deepfake Plan</span></h1>
+    <p>Generate videos, clone voices, and detect fakes. All plans include our core AI tools. Upgrade as your needs grow.</p>
+
+    <!-- Billing Toggle -->
+    <div class="billing-toggle">
+        <button class="toggle-btn active" onclick="setBilling('monthly', this)">Monthly</button>
+        <button class="toggle-btn" onclick="setBilling('yearly', this)">
+            Yearly <span class="save-badge">Save 20%</span>
+        </button>
+    </div>
+</div>
+
+<!-- PLANS GRID -->
+<div class="plans-wrapper">
+  <div class="plans-grid">
+
+    <!-- FREE -->
+    <div class="plan-card">
+      <div class="plan-name">
+        <div class="plan-icon icon-gray">💎</div>
+        Free
+      </div>
+
+      <div class="price-row">
+        <span class="price-amount">$0</span>
+        <span class="price-period">/month</span>
+      </div>
+      <div class="price-credits">Includes <strong>3</strong> credits</div>
+
+      <button class="plan-cta" onclick="window.location.href='signup-login.html'">Get started free</button>
+
+      <div class="plan-divider"></div>
+      <div class="features-title">Features you'll love:</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Up to <span class="feat-num">3</span> deepfake video generations</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Videos up to <span class="feat-num">30 sec</span></span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span><span class="feat-num">5</span> voice clone samples</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Basic deepfake detection</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Video &amp; audio detection</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Standard processing speed</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Exports with watermark</span></div>
+      </div>
+    </div>
+
+    <!-- STARTER -->
+    <div class="plan-card">
+      <div class="plan-name">
+        <div class="plan-icon icon-blue">⚡</div>
+        Starter
+      </div>
+
+      <div class="price-row">
+        <span class="price-original monthly-price">$29</span>
+        <span class="price-original yearly-price">$36</span>
+        <span class="price-amount monthly-price">$24</span>
+        <span class="price-amount yearly-price">$19</span>
+        <span class="price-period">/month</span>
+      </div>
+      <div class="price-credits monthly-price">Includes <strong>200</strong> credits/month</div>
+      <div class="price-credits yearly-price">Includes <strong>2,400</strong> credits/year</div>
+
+      <button class="plan-cta" onclick="window.location.href='signup-login.html'">Upgrade now</button>
+
+      <div class="plan-divider"></div>
+      <div class="features-title">Everything in Free, plus:</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Up to <span class="feat-num">200</span> video generations</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Videos up to <span class="feat-num">3 min</span></span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span><span class="feat-num">3</span> custom voice clones</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Advanced detection analysis</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Detailed detection reports</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Fast video processing</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Watermark removal</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Access to all AI tools</span></div>
+      </div>
+    </div>
+
+    <!-- CREATOR — POPULAR -->
+    <div class="plan-card popular">
+      <div class="popular-badge">✦ Most Popular</div>
+      <div class="plan-name">
+        <div class="plan-icon icon-violet">🎨</div>
+        Creator
+        <span class="flash-tag">⚡ 50% OFF</span>
+      </div>
+
+      <div class="price-row">
+        <span class="price-original monthly-price">$69</span>
+        <span class="price-original yearly-price">$86</span>
+        <span class="price-amount monthly-price">$36</span>
+        <span class="price-amount yearly-price">$28</span>
+        <span class="price-period">/month</span>
+      </div>
+      <div class="price-credits monthly-price">Includes <strong>480</strong> credits/month</div>
+      <div class="price-credits yearly-price">Includes <strong>5,760</strong> credits/year</div>
+
+      <button class="plan-cta primary" onclick="window.location.href='signup-login.html'">Upgrade now</button>
+
+      <div class="plan-divider"></div>
+      <div class="features-title">Everything in Starter, plus:</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="feature-highlight">Unlimited video generation</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Videos up to <span class="feat-num">15 min</span></span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span><span class="feat-num">10</span> custom voice clones</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Real-time detection API</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Batch audio detection</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Faster video processing</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Voice emotion control</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Brand kit &amp; custom exports</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Priority support</span></div>
+      </div>
+    </div>
+
+    <!-- ENTERPRISE -->
+    <div class="plan-card">
+      <div class="plan-name">
+        <div class="plan-icon icon-green">🏢</div>
+        Enterprise
+      </div>
+
+      <div class="price-row">
+        <span class="price-amount" style="font-size:26px;padding-bottom:4px;">Custom</span>
+      </div>
+      <div class="price-credits">Custom number of credits</div>
+
+      <button class="plan-cta" onclick="window.location.href='mailto:sales@deepfakeguard.com'">Contact sales</button>
+
+      <div class="plan-divider"></div>
+      <div class="features-title">Everything in Creator, plus:</div>
+      <div class="feature-list">
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="feature-highlight">Unlimited everything</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Custom video length</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Unlimited voice clones</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Dedicated detection API</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Multi-user workspace</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Roles &amp; permissions</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Fastest processing (GPU priority)</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Dedicated account manager</span></div>
+        <div class="feature-item"><div class="feature-check"><svg viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Custom integrations &amp; SLA</span></div>
+      </div>
+    </div>
+
+  </div><!-- /plans-grid -->
+</div><!-- /plans-wrapper -->
+
+<!-- WHAT'S INCLUDED -->
+<div class="includes-strip">
+    <div class="includes-title">Everything runs on our <span>3 core AI tools</span></div>
+    <div class="includes-grid">
+        <div class="include-card">
+            <div class="include-icon ic-blue">🎬</div>
+            <h3>Deepfake Video Generator</h3>
+            <p>Swap faces in any video with a single photo. Upload a source video and a face image, and our AI generates a hyper-realistic deepfake output in seconds.</p>
+        </div>
+        <div class="include-card">
+            <div class="include-icon ic-violet">🎙️</div>
+            <h3>Voice Cloning</h3>
+            <p>Clone any voice from a short audio sample. Generate speech in any language with the cloned voice — perfect for dubbing, narration, and personalization.</p>
+        </div>
+        <div class="include-card">
+            <div class="include-icon ic-pink">🔍</div>
+            <h3>Deepfake Detector</h3>
+            <p>Analyze video and audio for AI manipulation. Get an authenticity score, status verdict (Real / Suspicious / Fake), and a detailed breakdown of findings.</p>
+        </div>
+    </div>
+</div>
+
+<!-- FAQ -->
+<div class="faq-section">
+    <div class="faq-title">Frequently asked questions</div>
+
+    <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+            What is a credit? <span class="chevron">▼</span>
+        </button>
+        <div class="faq-a">One credit equals one generation or detection task. Generating a deepfake video uses credits based on length; voice cloning and detection each use 1 credit per file.</div>
+    </div>
+    <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+            Can I switch plans anytime? <span class="chevron">▼</span>
+        </button>
+        <div class="faq-a">Yes! You can upgrade, downgrade, or cancel at any time from your account settings. Unused credits on a downgrade are prorated.</div>
+    </div>
+    <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+            Is the Free plan really free? <span class="chevron">▼</span>
+        </button>
+        <div class="faq-a">Absolutely. The Free plan gives you 3 credits with no credit card required. You can use them to generate a deepfake, clone a voice, or run a detection.</div>
+    </div>
+    <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+            Do credits roll over? <span class="chevron">▼</span>
+        </button>
+        <div class="faq-a">Credits reset at the start of each billing cycle and do not roll over. Yearly plan credits are allocated upfront for the full year.</div>
+    </div>
+    <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+            What video formats are supported? <span class="chevron">▼</span>
+        </button>
+        <div class="faq-a">We support MP4, WebM, MOV, AVI and most common formats. Audio detection supports MP3, WAV, OGG, M4A and AAC files up to 25MB.</div>
+    </div>
+</div>
+
+<script>
+/* ── NAVBAR SCROLL ── */
+window.addEventListener('scroll', function() {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+});
+
+/* ── DROPDOWN ── */
+function toggleDropdown() {
+    document.getElementById('toolsDropdown').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+    const dd = document.getElementById('toolsDropdown');
+    if (!dd.contains(e.target)) dd.classList.remove('open');
+});
+
+/* ── BILLING TOGGLE ── */
+function setBilling(mode, el) {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    if (mode === 'yearly') {
+        document.body.classList.add('yearly');
+    } else {
+        document.body.classList.remove('yearly');
+    }
+}
+
+/* ── FAQ ── */
+function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    item.classList.toggle('open');
+}
+</script>
+</body>
+</html>
