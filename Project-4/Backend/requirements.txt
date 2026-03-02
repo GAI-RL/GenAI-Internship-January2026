@@ -1,0 +1,22 @@
+# Web Framework
+fastapi
+uvicorn
+pydantic
+
+# Machine Learning & NLP (3.13 compatible versions)
+torch>=2.5.0
+torchvision
+torchaudio
+transformers>=4.45.0
+sentence-transformers>=3.0.0
+spacy>=3.8.0
+
+# Mathematics & Utilities
+# Upgraded to 1.13 because 1.12 does not support Python 3.13 properly
+sympy>=1.13.0
+scikit-learn
+# NumPy 2.1+ is mandatory for Python 3.13 support
+numpy>=2.1.0
+
+# Spacy model (Updated to 3.8.0 to match the newer Spacy version)
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
