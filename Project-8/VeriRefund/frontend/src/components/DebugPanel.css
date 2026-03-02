@@ -1,0 +1,130 @@
+.debug-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  box-shadow: var(--shadow-xl);
+  z-index: 9999;
+  max-width: 400px;
+  border: 2px solid var(--primary-color);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.debug-panel h3 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.debug-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  width: 100%;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.debug-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.debug-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.test-result {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+}
+
+.test-result.success {
+  background: #ecfdf5;
+  border: 1px solid #10b981;
+}
+
+.test-result.error {
+  background: #fef2f2;
+  border: 1px solid #ef4444;
+}
+
+.test-result h4 {
+  margin-bottom: 0.5rem;
+}
+
+.test-result pre {
+  font-size: 0.875rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.backend-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f3f4f6;
+  border-radius: var(--radius-md);
+}
+
+.backend-info h4 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.debug-instructions {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff7ed;
+  border-radius: var(--radius-md);
+  border-left: 4px solid #f59e0b;
+}
+
+.debug-instructions h4 {
+  color: #9a3412;
+  margin-bottom: 0.5rem;
+}
+
+.debug-instructions ol {
+  margin-left: 1.5rem;
+}
+
+.debug-instructions li {
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.debug-instructions code {
+  background: #f3f4f6;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+}
+
+.debug-instructions a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.debug-instructions a:hover {
+  text-decoration: underline;
+}
