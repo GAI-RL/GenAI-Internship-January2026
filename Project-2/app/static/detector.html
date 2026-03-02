@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deepfake Guard - Detector</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+* { margin:0; padding:0; box-sizing:border-box; font-family:'DM Sans', Arial, sans-serif; }
+body { background:#fbfbfb; color:black; }
+.navbar {
+    position:sticky; top:0; width:100%;
+    display:flex; justify-content:space-evenly; align-items:center;
+    padding:10px 15px; background:#ffffff;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05); z-index:1000;
+}
+.navbar.scrolled { border-radius:35px; margin:0px 20px; margin-top:13px; width:auto; background:#ffffffbf; }
+.logo { display:flex; align-items:center; font-size:20px; font-weight:bold; color:black; text-decoration:none; }
+.logo img { margin-right:10px; }
+.nav-links { display:flex; gap:25px; align-items:center; }
+.nav-links a { text-decoration:none; color:black; font-weight:500; }
+.nav-links a:hover { color:#2563eb; }
+.nav-dropdown { position:relative; }
+.nav-dropdown-trigger { display:flex; align-items:center; gap:5px; font-weight:500; color:black; cursor:pointer; user-select:none; font-size:15px; transition:color 0.2s; }
+.nav-dropdown-trigger:hover { color:#2563eb; }
+.nav-dropdown-trigger .arrow { width:14px; height:14px; transition:transform 0.2s; display:flex; align-items:center; justify-content:center; }
+.nav-dropdown.open .nav-dropdown-trigger .arrow { transform:rotate(180deg); }
+.dropdown-menu { display:none; position:absolute; top:calc(100% + 12px); left:50%; transform:translateX(-50%); background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.12); min-width:210px; padding:8px; z-index:999; }
+.nav-dropdown.open .dropdown-menu { display:block; }
+.dropdown-item { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:9px; text-decoration:none; color:#111; font-size:14px; font-weight:500; transition:background 0.15s, color 0.15s; }
+.dropdown-item:hover { background:#eff6ff; color:#2563eb; }
+.dropdown-item-text { display:flex; flex-direction:column; }
+.dropdown-item-title { font-weight:600; font-size:13px; }
+.dropdown-item-sub { font-size:11px; color:#9ca3af; font-weight:400; margin-top:1px; }
+.auth-buttons button { margin-left:10px; padding:8px 18px; border-radius:30px; border:none; cursor:pointer; font-weight:600; }
+.login { background:#2563eb; color:white; }
+.register { background:#10b981; color:white; }
+
+.page-header { text-align:center; padding:40px 20px 28px; }
+.page-header h1 { font-size:clamp(22px,4vw,36px); font-weight:700; margin-bottom:8px; }
+.page-header h1 span { background:linear-gradient(135deg,#2563eb,#7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.page-header p { color:#6b7280; font-size:14px; max-width:560px; margin:0 auto 18px; line-height:1.6; }
+.tab-row { display:flex; justify-content:center; gap:8px; }
+.mode-btn { padding:7px 22px; border-radius:8px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:all 0.2s; background:#f3f4f6; color:#6b7280; }
+.mode-btn.active { background:#2563eb; color:white; }
+
+.main-container { width:100%; max-width:1100px; background:white; border-radius:24px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.12); margin:20px auto 40px; }
+.content { padding:24px 32px 32px; }
+.detector-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
+
+.upload-card { border-radius:16px; border:1px solid #e5e7eb; overflow:hidden; background:#f9fafb; display:flex; flex-direction:column; }
+.card-header { padding:11px 16px; border-bottom:1px solid #e5e7eb; background:white; display:flex; align-items:center; gap:8px; }
+.card-header .dot { width:8px; height:8px; border-radius:50%; }
+.dot-violet { background:#7c3aed; box-shadow:0 0 5px #7c3aed55; }
+.card-header span { font-size:12px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.06em; }
+.card-header .badge { margin-left:auto; font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:0.04em; }
+.badge-violet { background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe; }
+
+.zone-wrapper { position:relative; width:100%; aspect-ratio:16/9; background:#f3f4f6; }
+.upload-zone { position:absolute; inset:8px; z-index:1; border:2px dashed #d1d5db; border-radius:12px; background:rgba(255,255,255,0.84); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.3s; overflow:hidden; }
+.upload-zone:hover  { border-color:#7c3aed; background:rgba(245,243,255,0.92); }
+.upload-zone.has-file { border-color:#10b981; border-style:solid; }
+.upload-zone.drag-over { border-color:#7c3aed; background:rgba(237,233,254,0.9); }
+.upload-zone input { display:none; }
+.upload-inner { text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; padding:16px; pointer-events:none; width:100%; height:100%; justify-content:center; position:relative; z-index:1; }
+.up-icon { font-size:36px; line-height:1; }
+.up-main { font-size:14px; font-weight:600; }
+.up-main em { color:#7c3aed; font-style:normal; }
+.up-sub { font-size:11px; color:#9ca3af; margin-top:2px; }
+.preview-wrap { position:absolute; inset:0; z-index:2; border-radius:10px; overflow:hidden; background:#000; display:flex; align-items:center; justify-content:center; }
+.preview-wrap video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.audio-preview-vis { position:absolute; inset:0; background:linear-gradient(135deg,#1e1b4b,#312e81); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+.audio-preview-vis .audio-icon { font-size:42px; }
+.audio-preview-vis .audio-name { color:#c7d2fe; font-size:12px; font-weight:600; max-width:80%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.audio-bars { display:flex; align-items:flex-end; gap:3px; height:36px; }
+.audio-bars span { width:4px; border-radius:2px; background:#818cf8; animation:bounce 0.8s infinite ease-in-out; }
+.audio-bars span:nth-child(1){ height:60%; animation-delay:0s; }
+.audio-bars span:nth-child(2){ height:100%; animation-delay:0.1s; }
+.audio-bars span:nth-child(3){ height:40%; animation-delay:0.2s; }
+.audio-bars span:nth-child(4){ height:80%; animation-delay:0.3s; }
+.audio-bars span:nth-child(5){ height:55%; animation-delay:0.15s; }
+.audio-bars span:nth-child(6){ height:90%; animation-delay:0.05s; }
+.audio-bars span:nth-child(7){ height:35%; animation-delay:0.25s; }
+@keyframes bounce { 0%,100%{ transform:scaleY(1); opacity:0.7; } 50%{ transform:scaleY(0.4); opacity:1; } }
+
+.result-card { border-radius:16px; border:1px solid #e5e7eb; overflow:hidden; background:#f9fafb; display:flex; flex-direction:column; min-height:320px; }
+.result-placeholder { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px; text-align:center; color:#9ca3af; }
+.result-placeholder .p-icon { font-size:40px; opacity:0.4; }
+.result-placeholder p { font-size:13px; line-height:1.6; }
+
+.analysis-overlay { flex:1; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:28px; background:linear-gradient(135deg,#0f172a,#1e1b4b); }
+.analysis-overlay.show { display:flex; }
+.prog-pct { font-size:26px; font-weight:700; color:white; }
+.prog-bar-bg { width:70%; height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+.prog-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,#2563eb,#7c3aed,#ec4899); border-radius:3px; transition:width 0.22s linear; }
+.prog-step-label { font-size:12px; color:#93c5fd; font-weight:600; }
+
+.results-display { flex:1; display:none; flex-direction:column; }
+.results-display.show { display:flex; }
+
+.engine-strip { padding:8px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e5e7eb; font-size:11px; font-weight:700; }
+.engine-strip .e-dot { width:7px; height:7px; border-radius:50%; }
+
+.score-area { padding:20px; display:flex; flex-direction:column; align-items:center; gap:10px; background:white; border-bottom:1px solid #e5e7eb; }
+.score-ring-wrap { position:relative; width:100px; height:100px; }
+.score-ring-wrap svg { transform:rotate(-90deg); }
+.score-ring-bg  { fill:none; stroke:#e5e7eb; stroke-width:8; }
+.score-ring-fill { fill:none; stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1); }
+.score-number { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:22px; font-weight:700; line-height:1; }
+.score-number span { font-size:10px; font-weight:500; color:#9ca3af; }
+.status-badge { padding:6px 18px; border-radius:20px; font-size:12px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; }
+.status-real       { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+.status-suspicious { background:#fef9c3; color:#a16207; border:1px solid #fde047; }
+.status-fake       { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
+
+.desc-area { padding:14px 16px; flex:1; overflow-y:auto; }
+.desc-label { font-size:10px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:6px; }
+.desc-text  { font-size:12px; color:#374151; line-height:1.7; }
+.indicators { padding:12px 16px; border-top:1px solid #e5e7eb; display:flex; gap:8px; flex-wrap:wrap; }
+.ind-chip   { padding:3px 10px; border-radius:20px; font-size:10px; font-weight:600; }
+.ind-ok  { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; }
+.ind-warn{ background:#fefce8; color:#a16207; border:1px solid #fde047; }
+.ind-bad { background:#fff1f2; color:#be123c; border:1px solid #fecdd3; }
+
+.error-overlay { flex:1; display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:28px; text-align:center; background:#fff1f2; }
+.error-overlay.show { display:flex; }
+.error-icon  { font-size:36px; }
+.error-title { font-size:14px; font-weight:700; color:#b91c1c; }
+.error-sub   { font-size:12px; color:#6b7280; line-height:1.6; }
+
+.action-row { display:flex; justify-content:flex-end; align-items:center; gap:12px; }
+.btn-analyze { padding:12px 30px; background:#7c3aed; color:white; border:none; border-radius:9999px; font-size:14px; font-weight:600; cursor:pointer; transition:background 0.2s; }
+.btn-analyze:hover    { background:#6d28d9; }
+.btn-analyze:disabled { background:#c4b5fd; cursor:not-allowed; opacity:0.7; }
+.btn-reset { display:none; padding:12px 24px; background:#f3f4f6; color:#374151; border:none; border-radius:9999px; font-size:14px; font-weight:600; cursor:pointer; }
+.btn-reset:hover  { background:#e5e7eb; }
+.btn-reset.show   { display:inline-block; }
+
+@media(max-width:720px){ .detector-grid{ grid-template-columns:1fr; } .nav-links{ display:none; } }
+</style>
+</head>
+<body>
+
+<div class="navbar" id="navbar">
+    <a href="/" class="logo">
+        <img src="https://cdn.prod.website-files.com/61ead44637176294fdd344ff/644fcb31ce04e75adce61643_Dictionary_Letters_Knockout-04.svg" loading="lazy" alt="Deepfake" height="35px">
+        <span>Deepfake Guard</span>
+    </a>
+    <div class="nav-links">
+        <a href="/index">Home</a>
+        <div class="nav-dropdown" id="toolsDropdown">
+            <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+                Tools
+                <span class="arrow"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            </div>
+            <div class="dropdown-menu">
+                <a href="/generator" class="dropdown-item"><div class="dropdown-item-text"><span class="dropdown-item-title">Video Generator</span><span class="dropdown-item-sub">Create deepfake videos</span></div></a>
+                <a href="/voice" class="dropdown-item"><div class="dropdown-item-text"><span class="dropdown-item-title">Voice Cloning</span><span class="dropdown-item-sub">Clone any voice instantly</span></div></a>
+                <a href="/detector" class="dropdown-item"><div class="dropdown-item-text"><span class="dropdown-item-title">Deepfake Detector</span><span class="dropdown-item-sub">Detect AI-generated media</span></div></a>
+            </div>
+        </div>
+        <a href="/pricing">Pricing</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="auth-buttons">
+        <a href="/signup-login"><button class="login">Login</button></a>
+        <a href="/signup-login"><button class="register">SignUp</button></a>
+    </div>
+</div>
+
+<div class="page-header">
+    <h1>Deepfake <span>Detection</span></h1>
+    <p>Upload a video or audio file. Our AI will analyze it for manipulation signals and give you a full authenticity report.</p>
+    <div class="tab-row">
+        <button class="mode-btn active" onclick="switchMode('video', this)">Video</button>
+        <button class="mode-btn" onclick="switchMode('audio', this)">Audio</button>
+    </div>
+</div>
+
+<div class="main-container">
+  <div class="content">
+    <div class="detector-grid">
+      <!-- UPLOAD CARD -->
+      <div class="upload-card">
+        <div class="card-header">
+          <div class="dot dot-violet"></div>
+          <span id="cardTitle">Source Video</span>
+          <div class="badge badge-violet" id="cardBadge">VIDEO</div>
+        </div>
+        <div class="zone-wrapper">
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fileInput" name="file" accept="video/*">
+            <div class="upload-inner" id="uploadInner">
+              <div class="up-icon" id="uploadIcon">▶️</div>
+              <div>
+                <div class="up-main"><em>Click to upload</em> or drag &amp; drop</div>
+                <div class="up-sub" id="uploadSub">MP4 · WebM · MOV · AVI &nbsp;|&nbsp; Max 50MB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT CARD -->
+      <div class="result-card" id="resultCard">
+        <div class="card-header">
+          <div class="dot" style="background:#10b981; box-shadow:0 0 5px #10b98155;"></div>
+          <span>Analysis Result</span>
+          <div class="badge" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:auto;">RESULT</div>
+        </div>
+
+        <div class="result-placeholder" id="resultPlaceholder">
+          <div class="p-icon">🔍</div>
+          <p>Upload a <strong style="color:#7c3aed;">video or audio</strong> file<br>then click <strong>Analyze</strong></p>
+        </div>
+
+        <div class="analysis-overlay" id="analysisOverlay">
+          <div class="prog-pct" id="progPct">0%</div>
+          <div class="prog-bar-bg"><div class="prog-bar-fill" id="progFill"></div></div>
+          <div class="prog-step-label" id="progText">Uploading…</div>
+        </div>
+
+        <div class="error-overlay" id="errorOverlay">
+          <div class="error-icon">❌</div>
+          <div class="error-title">Analysis Failed</div>
+          <div class="error-sub" id="errorMsg">Could not connect to the detection API.</div>
+        </div>
+
+        <!-- ✅ Raw API Response section fully removed -->
+        <div class="results-display" id="resultsDisplay">
+          <div class="engine-strip" id="engineStrip">
+            <div class="e-dot" id="engineDot"></div>
+            <span id="engineLabel"></span>
+          </div>
+          <div class="score-area">
+            <div class="score-ring-wrap">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle class="score-ring-bg" cx="50" cy="50" r="42"/>
+                <circle class="score-ring-fill" id="scoreRing" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9" stroke="#10b981"/>
+              </svg>
+              <div class="score-number" id="scoreNumber">—<br><span>score</span></div>
+            </div>
+            <div class="status-badge status-real" id="statusBadge">Pending</div>
+          </div>
+          <div class="desc-area">
+            <div class="desc-label">Analysis Summary</div>
+            <div class="desc-text" id="descText"></div>
+          </div>
+          <div class="indicators" id="indicatorsRow"></div>
+          <!-- ✅ Removed: .api-raw div was here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-reset" id="resetBtn" onclick="resetAll()">Reset</button>
+      <button class="btn-analyze" id="analyzeBtn" disabled onclick="runAnalysis()">
+        <span id="analyzeLabel">Analyze</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:8000';
+  let currentFile = null;
+  let currentMode = 'video';
+
+  const MODE = {
+    video: {
+      endpoint: '/bitmind-detect',
+      field: 'file',
+      accept: 'video/*',
+      icon: '🎬',
+      sub: 'MP4 · WebM · MOV · AVI  |  Max 50MB',
+      cardTitle: 'Source Video',
+      cardBadge: 'VIDEO',
+      engineLabel: ' Video Detection',
+      engineColor: '#f59e0b',
+      steps: [
+        [15, 'Uploading to Detector…'],
+        [35, 'Extracting video frames…'],
+        [55, 'Running deepfake classifier…'],
+        [75, 'Cross-checking neural signatures…'],
+        [90, 'Generating verdict…'],
+      ],
+    },
+    audio: {
+      endpoint: '/reality-defender-detect',
+      field: 'file',
+      accept: 'audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus',
+      icon: '🔊',
+      sub: 'MP3 · WAV · OGG · M4A  |  Max 25MB',
+      cardTitle: 'Source Audio',
+      cardBadge: 'AUDIO',
+      engineLabel: ' Audio Detection',
+      engineColor: '#7c3aed',
+      steps: [
+        [15, 'Uploading to Detector…'],
+        [35, 'Analyzing voice patterns…'],
+        [55, 'Running audio deepfake model…'],
+        [75, 'Verifying spectral signatures…'],
+        [90, 'Generating verdict…'],
+      ],
+    },
+  };
+
+  function switchMode(mode, el) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    resetAll();
+    const cfg = MODE[mode];
+    document.getElementById('fileInput').accept = cfg.accept;
+    document.getElementById('uploadIcon').textContent = cfg.icon;
+    document.getElementById('uploadSub').textContent = cfg.sub;
+    document.getElementById('cardTitle').textContent = cfg.cardTitle;
+    document.getElementById('cardBadge').textContent = cfg.cardBadge;
+  }
+
+  // ── Upload zone ──
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('click', e => {
+    if (!e.target.closest('.preview-wrap')) document.getElementById('fileInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    currentFile = f;
+    setPreview(URL.createObjectURL(f), currentMode === 'video' ? 'video' : 'audio', f.name);
+  });
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+    currentFile = f;
+    const detectedType = f.type.startsWith('video') ? 'video' : 'audio';
+    if (detectedType !== currentMode) {
+        alert(`You're in ${currentMode} mode but uploaded a ${detectedType} file. Please switch modes.`);
+        return;
+    }
+setPreview(URL.createObjectURL(f), detectedType, f.name);
+  });
+
+  function setPreview(src, type, name) {
+    zone.querySelectorAll('.preview-wrap').forEach(el => el.remove());
+    document.getElementById('uploadInner').style.display = 'none';
+    const wrap = document.createElement('div');
+    wrap.className = 'preview-wrap';
+    if (type === 'video') {
+      const v = document.createElement('video');
+      v.src = src;
+      v.muted = true;
+      v.autoplay = true;
+      v.loop = true;
+      v.playsInline = true;
+      wrap.appendChild(v);
+    } else {
+      const div = document.createElement('div');
+      div.className = 'audio-preview-vis';
+      div.innerHTML = `<div class="audio-icon">🔊</div>
+        <div class="audio-bars"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="audio-name">${name}</div>`;
+      wrap.appendChild(div);
+    }
+    zone.appendChild(wrap);
+    zone.classList.add('has-file');
+    document.getElementById('analyzeBtn').disabled = false;
+  }
+
+  async function runAnalysis() {
+    if (!currentFile) { alert('Please upload a file first'); return; }
+
+    const cfg = MODE[currentMode];
+    const analyzeBtn   = document.getElementById('analyzeBtn');
+    const analyzeLabel = document.getElementById('analyzeLabel');
+    analyzeBtn.disabled = true;
+    analyzeLabel.textContent = 'Analyzing…';
+
+    document.getElementById('resultPlaceholder').style.display = 'none';
+    document.getElementById('resultsDisplay').classList.remove('show');
+    document.getElementById('errorOverlay').classList.remove('show');
+
+    const overlay = document.getElementById('analysisOverlay');
+    const fill    = document.getElementById('progFill');
+    const text    = document.getElementById('progText');
+    const pct     = document.getElementById('progPct');
+    overlay.classList.add('show');
+    fill.style.width = '0%';
+
+    let stepIdx = 0;
+    const progInterval = setInterval(() => {
+      if (stepIdx < cfg.steps.length) {
+        const [p, msg] = cfg.steps[stepIdx++];
+        fill.style.width = p + '%';
+        pct.textContent  = p + '%';
+        text.textContent = msg;
+      }
+    }, 1400);
+
+    try {
+      const formData = new FormData();
+      formData.append(cfg.field, currentFile, currentFile.name);
+
+      const response = await fetch(API_BASE + cfg.endpoint, {
+        method: 'POST',
+        body: formData,
+      });
+
+      clearInterval(progInterval);
+      fill.style.width = '100%';
+      pct.textContent  = '100%';
+      text.textContent = 'Complete!';
+
+      if (!response.ok) {
+        let errMsg = `Server error ${response.status}`;
+        try {
+          const errData = await response.json();
+          errMsg = errData.detail || JSON.stringify(errData);
+        } catch {
+          errMsg = await response.text() || errMsg;
+        }
+        throw new Error(errMsg);
+      }
+
+      const result = await response.json();
+
+      setTimeout(() => {
+        overlay.classList.remove('show');
+        showResults(result, cfg);
+        analyzeBtn.disabled = false;
+        analyzeLabel.textContent = 'Analyze Again';
+        document.getElementById('resetBtn').classList.add('show');
+      }, 400);
+
+    } catch (err) {
+      clearInterval(progInterval);
+      overlay.classList.remove('show');
+
+      let msg = err.message || 'Unknown error occurred.';
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+        msg = `Cannot connect to backend.\n\nCheck:\n• Is the FastAPI server running on ${API_BASE}?\n• Is CORS enabled on the backend?`;
+      } else if (msg.includes('422')) {
+        msg = `Server rejected the file (422). Check the FormData field name matches FastAPI param ('file').`;
+      }
+
+      document.getElementById('errorMsg').textContent = msg;
+      document.getElementById('errorOverlay').classList.add('show');
+      analyzeBtn.disabled = false;
+      analyzeLabel.textContent = 'Analyze';
+    }
+  }
+
+  // ── Show Results — raw API section fully removed ──
+  function showResults(apiResult, cfg) {
+    const score_pct = apiResult.score_percent ?? Math.round((apiResult.score ?? 0) * 100);
+    const verdict   = (apiResult.verdict || '').toUpperCase();
+    const meaning   = apiResult.meaning || '';
+
+    let statusClass = 'status-real';
+    let statusLabel = 'Authentic';
+    let indicators  = [];
+
+    if (verdict === 'MANIPULATED' || score_pct >= 70) {
+      statusClass = 'status-fake';
+      statusLabel = 'Fake Detected';
+      indicators  = [
+        { label: 'Manipulated',        cls: 'ind-bad'  },
+        { label: 'AI Generated',       cls: 'ind-bad'  },
+        { label: 'Synthetic Artifacts',cls: 'ind-warn' },
+      ];
+    } else if (verdict === 'UNCERTAIN' || (score_pct >= 30 && score_pct < 70)) {
+      statusClass = 'status-suspicious';
+      statusLabel = 'Suspicious';
+      indicators  = [
+        { label: 'Inconclusive',   cls: 'ind-warn' },
+        { label: 'Minor Artifacts',cls: 'ind-warn' },
+        { label: 'Needs Review',   cls: 'ind-warn' },
+      ];
+    } else {
+      indicators = [
+        { label: 'No Manipulation', cls: 'ind-ok' },
+        { label: 'Natural Patterns',cls: 'ind-ok' },
+        { label: 'Authentic',       cls: 'ind-ok' },
+      ];
+    }
+
+    const circumference = 263.9;
+    const ring = document.getElementById('scoreRing');
+    ring.style.strokeDashoffset = circumference;
+    ring.style.stroke = score_pct >= 70 ? '#ef4444' : score_pct >= 30 ? '#f59e0b' : '#10b981';
+    setTimeout(() => {
+      ring.style.strokeDashoffset = circumference - (score_pct / 100) * circumference;
+    }, 50);
+
+    document.getElementById('scoreNumber').innerHTML = `${score_pct}<br><span>/ 100</span>`;
+    const sb = document.getElementById('statusBadge');
+    sb.className   = `status-badge ${statusClass}`;
+    sb.textContent = statusLabel;
+    document.getElementById('descText').textContent = meaning;
+    document.getElementById('indicatorsRow').innerHTML = indicators
+      .map(i => `<span class="ind-chip ${i.cls}">${i.label}</span>`)
+      .join('');
+
+    document.getElementById('engineDot').style.background = cfg.engineColor;
+    document.getElementById('engineLabel').textContent     = cfg.engineLabel;
+    document.getElementById('engineLabel').style.color     = cfg.engineColor;
+
+    // ✅ Removed: apiRaw show logic — element no longer exists
+    document.getElementById('resultsDisplay').classList.add('show');
+  }
+
+  // ── Reset ──
+  function resetAll() {
+    currentFile = null;
+    zone.querySelectorAll('.preview-wrap').forEach(el => el.remove());
+    document.getElementById('uploadInner').style.display = '';
+    zone.classList.remove('has-file', 'drag-over');
+    document.getElementById('fileInput').value = '';
+    document.getElementById('resultPlaceholder').style.display = '';
+    document.getElementById('analysisOverlay').classList.remove('show');
+    document.getElementById('resultsDisplay').classList.remove('show');
+    document.getElementById('errorOverlay').classList.remove('show');
+    document.getElementById('progFill').style.width = '0%';
+    document.getElementById('progPct').textContent  = '0%';
+    document.getElementById('analyzeBtn').disabled  = true;
+    document.getElementById('analyzeLabel').textContent = 'Analyze';
+    document.getElementById('resetBtn').classList.remove('show');
+  }
+
+  // ── Navbar ──
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+  });
+  function toggleDropdown() {
+    document.getElementById('toolsDropdown').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    if (!document.getElementById('toolsDropdown').contains(e.target))
+      document.getElementById('toolsDropdown').classList.remove('open');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Cloner — Deepfake Guard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #fbfbfb; color: black; width: 100%; overflow-x: hidden; }
+.navbar { position: sticky; top: 0; width: 100%; display: flex; justify-content: space-evenly; align-items: center; padding: 10px 15px; background: #ffffff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 1000; }
+.navbar.scrolled { border-radius: 35px; margin: 0px 20px; margin-top: 13px; width: auto; background: #ffffffbf; }
+.logo { display:flex; align-items:center; font-size:20px; font-weight:bold; color:black; text-decoration:none; }
+.logo img { margin-right:10px; }
+.nav-links { display:flex; gap:25px; align-items:center; }
+.nav-links a { text-decoration:none; color:black; font-weight:500; transition:color 0.2s; }
+.nav-links a:hover { color:#2563eb; }
+.nav-dropdown { position:relative; }
+.nav-dropdown-trigger { display:flex; align-items:center; gap:5px; font-weight:500; color:black; cursor:pointer; user-select:none; font-size:15px; transition:color 0.2s; }
+.nav-dropdown-trigger:hover { color:#2563eb; }
+.nav-dropdown-trigger .arrow { width:14px; height:14px; transition:transform 0.2s; display:flex; align-items:center; justify-content:center; }
+.nav-dropdown.open .nav-dropdown-trigger .arrow { transform:rotate(180deg); }
+.dropdown-menu { display:none; position:absolute; top:calc(100% + 12px); left:50%; transform:translateX(-50%); background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.12); min-width:210px; padding:8px; z-index:999; animation:dropIn 0.18s ease; }
+@keyframes dropIn { from{opacity:0;transform:translateX(-50%) translateY(-6px);}to{opacity:1;transform:translateX(-50%) translateY(0);} }
+.nav-dropdown.open .dropdown-menu { display:block; }
+.dropdown-item { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:9px; text-decoration:none; color:#111; font-size:14px; font-weight:500; transition:background 0.15s,color 0.15s; }
+.dropdown-item:hover { background:#eff6ff; color:#2563eb; }
+.dropdown-item-text { display:flex; flex-direction:column; }
+.dropdown-item-title { font-weight:600; font-size:13px; }
+.dropdown-item-sub { font-size:11px; color:#9ca3af; font-weight:400; margin-top:1px; }
+.auth-buttons button { margin-left:10px; padding:8px 18px; border-radius:30px; border:none; cursor:pointer; font-weight:600; }
+.login { background:#2563eb; color:white; }
+.register { background:#10b981; color:white; }
+
+/* ── Layout ── */
+.main-container { width:100%; max-width:1200px; background:white; border-radius:24px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); margin:24px auto 48px; }
+.content { padding:24px 32px 32px; }
+.header { margin-bottom:24px; }
+.header h1 { font-size:24px; font-weight:700; }
+.header h1 span { background:linear-gradient(135deg,#2563eb,#7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.header p { margin-top:6px; color:#6b7280; font-size:14px; }
+.engine-only-badge { display:inline-flex; align-items:center; gap:8px; margin-bottom:20px; padding:8px 18px; background:#f5f3ff; border:1.5px solid #8b5cf6; border-radius:20px; font-size:13px; font-weight:700; color:#7c3aed; }
+.engine-only-badge .dot { width:9px; height:9px; border-radius:50%; background:#8b5cf6; }
+
+.cloner-wrap { display:flex; gap:20px; align-items:stretch; margin-bottom:20px; }
+.panel { background:#fff; border:1px solid #e5e7eb; border-radius:20px; padding:28px; flex:1; display:flex; flex-direction:column; gap:20px; box-shadow:0 4px 20px rgba(0,0,0,0.05); }
+.panel-header { display:flex; align-items:flex-start; gap:14px; }
+.step-num { width:34px; height:34px; border-radius:50%; background:#2563eb; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; color:#fff; flex-shrink:0; }
+.panel-title { font-size:16px; font-weight:700; color:#111; margin-bottom:3px; }
+.panel-sub { font-size:12px; color:#9ca3af; }
+
+/* ── Upload zone ── */
+.upload-zone { border:2px dashed #d1d5db; border-radius:14px; padding:28px 20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; cursor:pointer; transition:border-color 0.2s,background 0.2s; text-align:center; background:#fafafa; }
+.upload-zone:hover { border-color:#2563eb; background:#eff6ff; }
+.upload-zone.drag { border-color:#2563eb; background:#dbeafe; }
+.upload-zone.has-file { border-color:#10b981; background:#f0fdf4; }
+.upload-icon-wrap { width:48px; height:48px; background:#eff6ff; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.upload-text { color:#374151; font-size:13px; font-weight:500; }
+.upload-tips { color:#9ca3af; font-size:11px; line-height:1.9; }
+#file-input { display:none; }
+
+/* ── Voices list ── */
+.voices-label { color:#9ca3af; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; }
+.voices-list { display:flex; flex-direction:column; gap:8px; }
+.voice-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; border:1px solid #e5e7eb; transition:border-color 0.2s,background 0.2s; cursor:pointer; gap:10px; }
+.voice-item:hover { border-color:#93c5fd; background:#f8faff; }
+.voice-item.selected { border-color:#2563eb; background:#eff6ff; }
+.voice-left { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+.play-btn { width:32px; height:32px; border-radius:50%; background:#f3f4f6; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background 0.2s; flex-shrink:0; }
+.play-btn:hover { background:#dbeafe; }
+.play-btn.playing { background:#2563eb; }
+.voice-name { color:#111; font-size:13px; font-weight:600; }
+.voice-dur { color:#9ca3af; font-size:11px; }
+.use-btn { padding:5px 14px; border-radius:7px; background:transparent; border:1px solid #d1d5db; color:#6b7280; font-size:12px; cursor:pointer; font-family:Arial,sans-serif; transition:all 0.2s; white-space:nowrap; }
+.use-btn:hover { border-color:#2563eb; color:#2563eb; }
+.voice-item.selected .use-btn { background:#2563eb; border-color:#2563eb; color:#fff; }
+
+/* ── Script panel ── */
+textarea { width:100%; min-height:200px; background:#fafafa; border:1px solid #e5e7eb; border-radius:12px; padding:16px; color:#111; font-size:14px; line-height:1.7; resize:vertical; font-family:Arial,sans-serif; transition:border-color 0.2s; outline:none; }
+textarea:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+textarea::placeholder { color:#d1d5db; }
+.bottom-bar { display:flex; align-items:center; justify-content:space-between; margin-top:10px; }
+.char-count { color:#d1d5db; font-size:11px; }
+.lang-tag { display:flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:20px; padding:5px 12px; font-size:12px; font-weight:700; color:#2563eb; }
+.spacer { flex:1; }
+
+/* ── Audio preview ── */
+.audio-preview { display:none; flex-direction:column; gap:8px; background:#f0f4ff; border:1px solid #bfdbfe; border-radius:12px; padding:12px 14px; }
+.audio-preview.show { display:flex; }
+.preview-label { font-size:11px; font-weight:700; color:#2563eb; text-transform:uppercase; letter-spacing:0.07em; }
+.preview-filename { font-size:12px; color:#374151; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.audio-preview audio { width:100%; height:36px; border-radius:8px; outline:none; accent-color:#2563eb; }
+
+/* ── Status boxes ── */
+.success-box { display:none; flex-direction:column; align-items:center; gap:8px; padding:14px; background:#f0fdf4; border:1px solid #86efac; border-radius:10px; text-align:center; }
+.success-box.show { display:flex; }
+.success-title { color:#16a34a; font-size:13px; font-weight:700; }
+.success-sub { color:#6b7280; font-size:11px; }
+.error-box { display:none; flex-direction:column; align-items:center; gap:6px; padding:14px; background:#fff1f2; border:1px solid #fca5a5; border-radius:10px; text-align:center; }
+.error-box.show { display:flex; }
+.error-title { color:#b91c1c; font-size:13px; font-weight:700; }
+.error-sub { color:#6b7280; font-size:11px; }
+.debug-box { display:none; margin-top:10px; padding:12px; background:#1e1e1e; border-radius:10px; font-family:monospace; font-size:11px; color:#4ade80; max-height:200px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; }
+.debug-box.show { display:block; }
+.debug-toggle { font-size:11px; color:#9ca3af; cursor:pointer; text-decoration:underline; float:right; margin-top:4px; }
+
+/* ── Waveform animation ── */
+.waveform { display:flex; align-items:center; justify-content:center; gap:3px; height:22px; }
+.wave-bar { width:3px; border-radius:2px; background:#2563eb; animation:wavebar 0.8s ease-in-out infinite alternate; }
+@keyframes wavebar { from{height:4px;opacity:0.4;}to{height:18px;opacity:1;} }
+
+/* ── Loading spinner on voice item ── */
+.voice-loading { font-size:11px; color:#2563eb; font-style:italic; }
+
+/* ── Action row ── */
+.action-row { display:flex; justify-content:flex-end; align-items:center; gap:12px; }
+.btn-download { display:none; padding:12px 24px; background:#10b981; color:white; border:none; border-radius:9999px; font-size:14px; font-weight:600; cursor:pointer; transition:background 0.2s; }
+.btn-download:hover { background:#059669; }
+.btn-download.show { display:inline-block; }
+.btn-generate { padding:12px 30px; background:#8b5cf6; color:white; border:none; border-radius:9999px; font-size:14px; font-weight:600; cursor:pointer; transition:background 0.2s; }
+.btn-generate:hover { background:#7c3aed; }
+.btn-generate:disabled { background:#c4b5fd; cursor:not-allowed; opacity:0.7; }
+
+@media(max-width:640px){ .cloner-wrap{flex-direction:column;} .nav-links{display:none;} }
+</style>
+</head>
+<body>
+
+<div class="navbar" id="navbar">
+  <a href="/" class="logo">
+    <img src="https://cdn.prod.website-files.com/61ead44637176294fdd344ff/644fcb31ce04e75adce61643_Dictionary_Letters_Knockout-04.svg" loading="lazy" alt="Deepfake" height="35px">
+    <span>Deepfake Guard</span>
+  </a>
+  <div class="nav-links">
+    <a href="/index">Home</a>
+    <div class="nav-dropdown" id="toolsDropdown">
+      <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+        Tools
+        <span class="arrow"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+      <div class="dropdown-menu">
+        <a href="/generator" class="dropdown-item"><div class="dropdown-item-text"><span class="dropdown-item-title">Video Generator</span><span class="dropdown-item-sub">Create deepfake videos</span></div></a>
+        <a href="/voice" class="dropdown-item"><div class="dropdown-item-text"><span class="dropdown-item-title">Voice Cloning</span><span class="dropdown-item-sub">Clone any voice instantly</span></div></a>
+        <a href="/detector" class="dropdown-item"><div class="dropdown-item-text"><span class="dropdown-item-title">Deepfake Detector</span><span class="dropdown-item-sub">Detect AI-generated media</span></div></a>
+      </div>
+    </div>
+    <a href="/pricing">Pricing</a>
+    <a href="/about">About</a>
+  </div>
+  <div class="auth-buttons">
+    <a href="/signup-login"><button class="login">Login</button></a>
+    <a href="/signup-login"><button class="register">SignUp</button></a>
+  </div>
+</div>
+
+<div class="main-container">
+  <div class="content">
+    <div class="header">
+      <h1>AI <span>Voice Cloner</span></h1>
+      <p>Choose a sample voice or upload your own, enter your script, and  clone it in seconds.</p>
+    </div>
+
+    <div class="engine-only-badge">
+      <div class="dot"></div>
+      Voice Clone Engine
+    </div>
+
+    <div class="cloner-wrap">
+
+      <!-- ══ LEFT: Voice Source ══ -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="step-num">1</div>
+          <div>
+            <div class="panel-title">Choose a voice to clone</div>
+            <div class="panel-sub">Pick a sample voice or upload your own WAV/MP3</div>
+          </div>
+        </div>
+
+        <!-- Upload zone -->
+        <div class="upload-zone" id="upload-zone"
+          onclick="document.getElementById('file-input').click()"
+          ondragover="handleDragOver(event)"
+          ondragleave="handleDragLeave()"
+          ondrop="handleDrop(event)">
+          <input type="file" id="file-input" accept=".mp3,.wav,.m4a,.flac,.opus,.webm" onchange="handleFileSelect(event)">
+          <div class="upload-icon-wrap" id="upload-icon-wrap">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 8v8M8 12l4-4 4 4" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="upload-text" id="upload-text">Upload your own audio</div>
+          <div class="upload-tips" id="upload-tips">mp3 · wav · m4a · webm · Up to 20MB<br>Recommended: ~10 seconds of clear speech</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;color:#9ca3af;font-size:12px;">
+          <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+          <span>or use a sample voice</span>
+          <div style="flex:1;height:1px;background:#e5e7eb;"></div>
+        </div>
+
+        <!-- Sample voices -->
+        <div>
+          <div class="voices-list" id="voices-list"></div>
+        </div>
+
+        <!-- Selected voice indicator -->
+        <div id="selected-voice-indicator" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:10px 14px;font-size:13px;color:#16a34a;font-weight:600;display:none;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 12l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="selected-voice-name">—</span>
+          <button onclick="clearVoice()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:18px;line-height:1;">×</button>
+        </div>
+      </div>
+
+      <!-- ══ RIGHT: Script ══ -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="step-num">2</div>
+          <div>
+            <div class="panel-title">Enter your script</div>
+            <div class="panel-sub">Text to speak in the cloned voice</div>
+          </div>
+        </div>
+
+        <textarea id="script-input" placeholder="Enter your text here…" oninput="onScriptInput()"></textarea>
+
+        <div class="bottom-bar">
+          <div class="lang-tag">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.5"/>
+              <path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20" stroke="#2563eb" stroke-width="1.5"/>
+            </svg>
+            English
+          </div>
+          <div class="char-count" id="char-count">0 chars</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="audio-preview" id="audio-preview">
+          <div class="preview-label">🎧 Cloned Voice Preview</div>
+          <div class="preview-filename" id="preview-filename">—</div>
+          <audio id="preview-audio" controls></audio>
+        </div>
+
+        <div class="success-box" id="success-box">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#16a34a" fill-opacity="0.12"/>
+            <path d="M8 12l3 3 5-5" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="success-title">Voice cloned successfully!</div>
+          <div class="success-sub" id="success-sub-text">Your audio is ready to download</div>
+        </div>
+
+        <div class="error-box" id="error-box">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#b91c1c" fill-opacity="0.12"/>
+            <path d="M12 8v4M12 16h.01" stroke="#b91c1c" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <div class="error-title">Generation Failed</div>
+          <div class="error-sub" id="error-message">Something went wrong. Please try again.</div>
+          <span class="debug-toggle" onclick="toggleDebug()">show debug log</span>
+        </div>
+
+        <div class="debug-box" id="debug-box"></div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-download" id="downloadBtn" onclick="handleDownload()">⬇ Download Audio</button>
+      <button class="btn-generate" id="clone-btn" disabled onclick="doClone()">
+        <span id="clone-label">Clone Voice Now</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG
+// Empty string = same origin (FastAPI serves this page).
+// Change to 'http://YOUR_IP:8000' if frontend/backend are separate.
+// ══════════════════════════════════════════════════════════════
+const API_BASE = '';
+
+// ══════════════════════════════════════════════════════════════
+// SAMPLE VOICES
+// Files must exist at: static/voices/<filename>
+// FastAPI serves them via app.mount("/static", ...)
+// ══════════════════════════════════════════════════════════════
+const VOICES = [
+  { id:'sample1', name:'Ghazala', dur:'0:04', url:'/static/voices/ghazala.wav' },
+  { id:'sample2', name:'Woman', dur:'0:02', url:'/static/voices/prompt.wav' },
+  { id:'sample3', name:'Man', dur:'0:18', url:'/static/voices/harvard.wav' },
+];
+
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let uploadedFile  = null;   // File or Blob — the voice reference
+let uploadedURL   = null;   // Object URL for the uploaded file
+let clonedBlob    = null;   // Result audio blob
+let clonedURL     = null;   // Object URL for result
+let playingId     = null;   // Which sample is currently playing
+let currentAudio  = null;   // HTMLAudioElement for sample preview
+let isCloning     = false;
+let debugLines    = [];
+
+// ══════════════════════════════════════════════════════════════
+// DEBUG
+// ══════════════════════════════════════════════════════════════
+function dbg(msg) {
+  const ts = new Date().toLocaleTimeString();
+  debugLines.push('[' + ts + '] ' + msg);
+  const box = document.getElementById('debug-box');
+  if (box) { box.textContent = debugLines.slice(-40).join('\n'); box.scrollTop = box.scrollHeight; }
+  console.log('[VoiceCloner]', msg);
+}
+function toggleDebug() { document.getElementById('debug-box').classList.toggle('show'); }
+
+// ══════════════════════════════════════════════════════════════
+// NAVBAR
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+});
+function toggleDropdown() { document.getElementById('toolsDropdown').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  if (!document.getElementById('toolsDropdown').contains(e.target))
+    document.getElementById('toolsDropdown').classList.remove('open');
+});
+
+// ══════════════════════════════════════════════════════════════
+// SAMPLE VOICES — render
+// ══════════════════════════════════════════════════════════════
+function renderVoices() {
+  document.getElementById('voices-list').innerHTML = VOICES.map(v => {
+    const isSel = uploadedFile && uploadedFile._sampleId === v.id;
+    const isPlaying = playingId === v.id;
+    return `
+    <div class="voice-item ${isSel ? 'selected' : ''}" onclick="handleVoiceItemClick('${v.id}')">
+      <div class="voice-left">
+        <button class="play-btn ${isPlaying ? 'playing' : ''}"
+          title="${isPlaying ? 'Stop preview' : 'Preview voice'}"
+          onclick="event.stopPropagation(); togglePlay('${v.id}')">
+          ${isPlaying ? pauseIcon() : playIcon()}
+        </button>
+        <div>
+          <div class="voice-name">${v.name}</div>
+          <div class="voice-dur">${v.dur} &nbsp;·&nbsp; <span style="color:#9ca3af">sample</span></div>
+        </div>
+      </div>
+      <button class="use-btn" id="use-btn-${v.id}"
+        onclick="event.stopPropagation(); selectVoice('${v.id}')">
+        ${isSel ? '✓ Selected' : 'Use'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ── Click on the row itself: if not selected → select it; if already selected → deselect ──
+function handleVoiceItemClick(id) {
+  const voice = VOICES.find(v => v.id === id);
+  if (!voice) return;
+  if (uploadedFile && uploadedFile._sampleId === id) {
+    clearVoice();  // already selected → toggle off
+  } else {
+    selectVoice(id);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAMPLE VOICES — preview playback (▶ / ⏸)
+// ══════════════════════════════════════════════════════════════
+function togglePlay(id) {
+  // Stop whatever is playing
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if (playingId === id) {
+    // Same button → just stop
+    playingId = null;
+    renderVoices();
+    return;
+  }
+  // Play the new one
+  const voice = VOICES.find(v => v.id === id);
+  if (!voice) return;
+  playingId = id;
+  renderVoices();
+  currentAudio = new Audio(voice.url);
+  currentAudio.play().catch(err => {
+    dbg('Preview play error: ' + err.message);
+    playingId = null; renderVoices();
+  });
+  currentAudio.onended = () => {
+    playingId = null; currentAudio = null; renderVoices();
+  };
+  currentAudio.onerror = () => {
+    dbg('Audio load error for ' + voice.url + ' — is the file in static/voices/?');
+    playingId = null; currentAudio = null; renderVoices();
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAMPLE VOICES — select (fetch blob → set as uploadedFile)
+// ══════════════════════════════════════════════════════════════
+async function selectVoice(id) {
+  const voice = VOICES.find(v => v.id === id);
+  if (!voice) return;
+
+  // Show loading state
+  const useBtn = document.getElementById('use-btn-' + id);
+  if (useBtn) useBtn.textContent = '…';
+  dbg('Fetching sample: ' + voice.name + ' from ' + voice.url);
+
+  try {
+    const res = await fetch(voice.url);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' — is ' + voice.url + ' served by FastAPI /static?');
+    const blob = await res.blob();
+    if (blob.size === 0) throw new Error('File fetched but is 0 bytes — check the file exists in static/voices/');
+
+    const ext = voice.url.split('.').pop().toLowerCase();
+    if (uploadedURL) URL.revokeObjectURL(uploadedURL);
+
+    // Create a File so the server sees a real filename with extension
+    uploadedFile = new File([blob], voice.name + '.' + ext, { type: blob.type || 'audio/' + ext });
+    uploadedFile._sampleId = id;  // tag so we know which sample is selected
+    uploadedURL = URL.createObjectURL(uploadedFile);
+
+    dbg('Sample ready: ' + uploadedFile.name + ' (' + (blob.size / 1024).toFixed(1) + ' KB)');
+
+    // Update UI
+    showSelectedIndicator(voice.name + ' (sample)');
+    renderVoices();
+    updateCloneBtn();
+    hideResults();
+
+  } catch (err) {
+    dbg('Failed to load sample: ' + err.message);
+    if (useBtn) useBtn.textContent = 'Use';
+    // Show a helpful hint in the error box
+    showError('Could not load sample voice. ' + err.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// VOICE INDICATOR & CLEAR
+// ══════════════════════════════════════════════════════════════
+function showSelectedIndicator(name) {
+  const el = document.getElementById('selected-voice-indicator');
+  document.getElementById('selected-voice-name').textContent = '✓ Using: ' + name;
+  el.style.display = 'flex';
+}
+
+function clearVoice() {
+  if (uploadedURL) URL.revokeObjectURL(uploadedURL);
+  uploadedFile = null;
+  uploadedURL  = null;
+  document.getElementById('selected-voice-indicator').style.display = 'none';
+  // Reset upload zone
+  const zone = document.getElementById('upload-zone');
+  zone.classList.remove('has-file');
+  document.getElementById('upload-icon-wrap').style.background = '#eff6ff';
+  document.getElementById('upload-icon-wrap').innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 8v8M8 12l4-4 4 4" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  document.getElementById('upload-text').textContent = 'Upload your own audio';
+  document.getElementById('upload-text').style.color = '#374151';
+  document.getElementById('upload-tips').textContent = 'mp3 · wav · m4a · webm · Up to 20MB\nRecommended: ~10 seconds of clear speech';
+  document.getElementById('file-input').value = '';
+  renderVoices();
+  updateCloneBtn();
+}
+
+// ══════════════════════════════════════════════════════════════
+// FILE UPLOAD
+// ══════════════════════════════════════════════════════════════
+function handleFileSelect(e) { handleFile(e.target.files[0]); }
+function handleDragOver(e)   { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function handleDragLeave()   { document.getElementById('upload-zone').classList.remove('drag'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  handleFile(e.dataTransfer.files[0]);
+}
+function handleFile(file) {
+  if (!file) return;
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!['.mp3','.wav','.m4a','.flac','.opus','.webm'].includes(ext)) {
+    showError('Unsupported file type: ' + ext + '. Use mp3, wav, m4a, webm.'); return;
+  }
+  if (file.size > 20 * 1024 * 1024) { showError('File too large (max 20 MB)'); return; }
+
+  if (uploadedURL) URL.revokeObjectURL(uploadedURL);
+  uploadedFile = file;
+  uploadedURL  = URL.createObjectURL(file);
+  dbg('File uploaded: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)');
+
+  // Update upload zone UI
+  document.getElementById('upload-zone').classList.add('has-file');
+  document.getElementById('upload-icon-wrap').style.background = '#dcfce7';
+  document.getElementById('upload-icon-wrap').innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M8 12l3 3 5-5" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  document.getElementById('upload-text').textContent = file.name;
+  document.getElementById('upload-text').style.color = '#16a34a';
+  document.getElementById('upload-tips').textContent = 'Click to replace';
+
+  showSelectedIndicator(file.name);
+  renderVoices();   // deselect any sample
+  updateCloneBtn();
+  hideResults();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCRIPT INPUT
+// ══════════════════════════════════════════════════════════════
+function onScriptInput() {
+  document.getElementById('char-count').textContent =
+    document.getElementById('script-input').value.length + ' chars';
+  hideResults();
+  updateCloneBtn();
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLONE BUTTON STATE
+// ══════════════════════════════════════════════════════════════
+function canClone() {
+  return !!uploadedFile &&
+         document.getElementById('script-input').value.trim().length > 0 &&
+         !isCloning;
+}
+function updateCloneBtn() {
+  document.getElementById('clone-btn').disabled = !canClone();
+}
+
+// ══════════════════════════════════════════════════════════════
+// DO CLONE
+// ══════════════════════════════════════════════════════════════
+async function doClone() {
+  if (!canClone()) return;
+  debugLines = [];
+  isCloning = true;
+  updateCloneBtn();
+  hideResults();
+  document.getElementById('downloadBtn').classList.remove('show');
+  clonedBlob = null;
+  if (clonedURL) { URL.revokeObjectURL(clonedURL); clonedURL = null; }
+
+  const label = document.getElementById('clone-label');
+  label.innerHTML = `<span style="display:flex;align-items:center;gap:8px;justify-content:center">
+    <div class="waveform" style="height:16px">${waveHTML('rgba(255,255,255,0.9)')}</div> Cloning…</span>`;
+
+  try {
+    const text = document.getElementById('script-input').value.trim();
+    // Blobs from recording get a .webm filename so the backend accepts them
+    const filename = (uploadedFile instanceof File) ? uploadedFile.name : 'recording.webm';
+
+    dbg('text: "' + text.substring(0, 50) + '"');
+    dbg('voice: ' + filename + ' (' + (uploadedFile.size / 1024).toFixed(1) + ' KB)');
+    dbg('POST → ' + API_BASE + '/zyphra-voice');
+
+    const fd = new FormData();
+    fd.append('text', text);
+    fd.append('voice', uploadedFile, filename);
+
+    const response = await fetch(API_BASE + '/zyphra-voice', { method:'POST', body:fd });
+    dbg('HTTP ' + response.status + ' ' + response.statusText);
+
+    if (!response.ok) {
+      let msg = 'Server error ' + response.status;
+      try { const j = await response.json(); msg = j.detail || msg; } catch(_) {}
+      throw new Error(msg);
+    }
+
+    // ── BYTE-SNIFF: never trust Content-Type, look at the actual bytes ──
+    // RIFF = WAV, 0xFF 0xEx = MP3, { = JSON+base64 wrapper
+    const buf       = await response.arrayBuffer();
+    const head      = new Uint8Array(buf.slice(0, 4));
+    const magic     = String.fromCharCode(...head);
+    const hexHead   = [...head].map(b => b.toString(16).padStart(2,'0')).join(' ');
+    dbg('First 4 bytes: "' + magic + '" [' + hexHead + ']');
+
+    let audioBlob;
+
+    if (magic.startsWith('RIFF')) {
+      // Raw WAV
+      dbg('Detected WAV (RIFF header) — using directly');
+      audioBlob = new Blob([buf], { type:'audio/wav' });
+
+    } else if (head[0] === 0xFF && (head[1] & 0xE0) === 0xE0) {
+      // Raw MP3 (sync word)
+      dbg('Detected MP3 (sync word) — using directly');
+      audioBlob = new Blob([buf], { type:'audio/mpeg' });
+
+    } else if (magic.startsWith('ID3')) {
+      // MP3 with ID3 tag
+      dbg('Detected MP3 (ID3 tag) — using directly');
+      audioBlob = new Blob([buf], { type:'audio/mpeg' });
+
+    } else if (magic.startsWith('{') || magic.startsWith('{ ')) {
+      // JSON+base64 wrapper (IDM-proof server response)
+      const text2 = new TextDecoder().decode(buf);
+      dbg('Detected JSON response');
+      let j;
+      try { j = JSON.parse(text2); } catch(e) {
+        throw new Error('Server sent malformed JSON: ' + text2.substring(0, 80));
+      }
+      if (j.detail) throw new Error(j.detail);
+      if (!j.audio_b64) throw new Error('JSON missing audio_b64 field — update main.py');
+      dbg('Decoding base64 (' + j.audio_b64.length + ' chars)');
+      const bin   = atob(j.audio_b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      audioBlob = new Blob([bytes], { type: j.mime_type || 'audio/wav' });
+
+    } else {
+      // Unknown — show the raw body for debugging
+      const body = new TextDecoder().decode(buf);
+      dbg('Unknown response: ' + body.substring(0, 200));
+      try {
+        const j = JSON.parse(body);
+        throw new Error(j.detail || 'Unexpected server response');
+      } catch(_) {
+        throw new Error('Unknown response. First bytes: "' + magic + '" — see debug log');
+      }
+    }
+
+    dbg('Audio blob: ' + (audioBlob.size / 1024).toFixed(1) + ' KB, type: ' + audioBlob.type);
+
+    if (audioBlob.size < 1000) {
+      throw new Error('Audio too small (' + audioBlob.size + ' bytes) — Zyphra likely rejected the request');
+    }
+
+    clonedBlob = audioBlob;
+    clonedURL  = URL.createObjectURL(audioBlob);
+
+    const audio = document.getElementById('preview-audio');
+    audio.src = clonedURL; audio.load();
+    document.getElementById('preview-filename').textContent = 'zyphra-cloned-voice.wav';
+    document.getElementById('audio-preview').classList.add('show');
+    document.getElementById('success-sub-text').textContent = 'Generated with Zyphra · Ready to download';
+    document.getElementById('success-box').classList.add('show');
+    document.getElementById('downloadBtn').classList.add('show');
+    dbg('✅ Success!');
+
+  } catch (err) {
+    dbg('❌ ' + err.message);
+    showError(err.message || 'Unknown error');
+  } finally {
+    isCloning = false;
+    label.textContent = 'Clone Voice Now';
+    updateCloneBtn();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// DOWNLOAD
+// ══════════════════════════════════════════════════════════════
+function handleDownload() {
+  if (!clonedBlob) return;
+  const a = document.createElement('a');
+  a.href = clonedURL;
+  a.download = 'zyphra-cloned-voice.wav';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// ══════════════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════════════
+function showError(msg) {
+  document.getElementById('error-message').textContent = msg;
+  document.getElementById('error-box').classList.add('show');
+  document.getElementById('debug-box').classList.add('show');
+}
+function hideResults() {
+  ['success-box','error-box','debug-box','audio-preview'].forEach(id =>
+    document.getElementById(id).classList.remove('show'));
+  const a = document.getElementById('preview-audio');
+  a.pause(); a.src = '';
+}
+function playIcon()  { return `<svg width="12" height="12" viewBox="0 0 12 12" fill="#6b7280"><path d="M2 1.5l9 4.5-9 4.5z"/></svg>`; }
+function pauseIcon() { return `<svg width="12" height="12" viewBox="0 0 12 12" fill="#fff"><rect x="1" y="1" width="4" height="10" rx="1"/><rect x="7" y="1" width="4" height="10" rx="1"/></svg>`; }
+function waveHTML(color) {
+  return Array.from({length:7}, (_,i) =>
+    `<div class="wave-bar" style="animation-delay:${i*0.1}s;background:${color}"></div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+renderVoices();
+dbg('Voice Cloner ready. API_BASE="' + API_BASE + '"');
+</script>
+</body>
+</html>

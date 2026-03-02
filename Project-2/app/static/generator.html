@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deepfake Guard - Video Upload</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+body { background:#fbfbfb; color:black; }
+
+/* NAVBAR */
+.navbar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    padding: 10px 15px;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+}
+.navbar.scrolled {
+    border-radius: 35px;
+    margin: 0px 20px;
+    margin-top: 13px;
+    width: auto;
+    z-index: 1000;
+    background: #ffffffbf;
+}
+.logo { display:flex; align-items:center; font-size:20px; font-weight:bold; color:black; text-decoration:none; }
+.logo img { margin-right:10px; }
+.nav-links { display:flex; gap:25px; align-items:center; }
+.nav-links a { text-decoration:none; color:black; font-weight:500; }
+.nav-links a:hover { color:#2563eb; }
+.nav-dropdown { position:relative; }
+.nav-dropdown-trigger { display:flex; align-items:center; gap:5px; font-weight:500; color:black; cursor:pointer; user-select:none; font-size:15px; transition:color 0.2s; }
+.nav-dropdown-trigger:hover { color:#2563eb; }
+.nav-dropdown-trigger .arrow { width:14px; height:14px; transition:transform 0.2s; display:flex; align-items:center; justify-content:center; }
+.nav-dropdown.open .nav-dropdown-trigger .arrow { transform:rotate(180deg); }
+.nav-dropdown-trigger .arrow svg { display:block; }
+.dropdown-menu { display:none; position:absolute; top:calc(100% + 12px); left:50%; transform:translateX(-50%); background:#fff; border:1px solid #e5e7eb; border-radius:14px; box-shadow:0 8px 32px rgba(0,0,0,0.12); min-width:210px; padding:8px; z-index:999; animation:dropIn 0.18s ease; }
+@keyframes dropIn { from { opacity:0; transform:translateX(-50%) translateY(-6px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+.nav-dropdown.open .dropdown-menu { display:block; }
+.dropdown-item { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:9px; text-decoration:none; color:#111; font-size:14px; font-weight:500; transition:background 0.15s, color 0.15s; }
+.dropdown-item:hover { background:#eff6ff; color:#2563eb; }
+.dropdown-item.active-tool { background:#eff6ff; color:#2563eb; }
+.dropdown-item-text { display:flex; flex-direction:column; }
+.dropdown-item-title { font-weight:600; font-size:13px; }
+.dropdown-item-sub { font-size:11px; color:#9ca3af; font-weight:400; margin-top:1px; }
+.auth-buttons button { margin-left:10px; padding:8px 18px; border-radius:30px; border:none; cursor:pointer; font-weight:600; }
+.login { background:#2563eb; color:white; }
+.register { background:#10b981; color:white; }
+
+/* ── MAIN CONTAINER ── */
+.main-container { width:100%; max-width:1200px; background:white; border-radius:24px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); margin:24px auto; }
+.content { padding:24px 32px 32px; }
+.header { margin-bottom:24px; }
+.header h1 { font-size:24px; font-weight:700; }
+.header h1 span { background:linear-gradient(135deg,#2563eb,#7c3aed); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.header p { margin-top:6px; color:#6b7280; font-size:14px; }
+
+/* ── HORIZONTAL UPLOAD ROW ── */
+.uploads-row {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  margin-bottom:20px;
+}
+
+/* ── UPLOAD CARD ── */
+.upload-card {
+  border-radius:16px;
+  border:1px solid #e5e7eb;
+  overflow:hidden;
+  background:#f9fafb;
+  display:flex;
+  flex-direction:column;
+  height:fit-content;
+}
+.card-header {
+  padding:11px 16px;
+  border-bottom:1px solid #e5e7eb;
+  background:white;
+  display:flex; align-items:center; gap:8px;
+}
+.card-header .dot { width:8px; height:8px; border-radius:50%; }
+.dot-blue { background:#2563eb; box-shadow:0 0 5px #2563eb55; }
+.dot-pink { background:#ec4899; box-shadow:0 0 5px #ec489955; }
+.card-header span { font-size:12px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.06em; }
+.card-header .badge {
+  margin-left:auto; font-size:10px; font-weight:700; padding:3px 10px;
+  border-radius:20px; letter-spacing:0.04em;
+}
+.badge-blue { background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; }
+.badge-pink { background:#fdf2f8; color:#ec4899; border:1px solid #fbcfe8; }
+
+/* Zone wrapper */
+.zone-wrapper {
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  background:#f3f4f6;
+}
+
+/* Background sample grid */
+.bg-grid {
+  position:absolute; inset:0;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:1fr 1fr;
+  gap:4px;
+  padding:6px;
+  z-index:0;
+}
+.bg-cell { border-radius:6px; overflow:hidden; opacity:0.28; }
+.bg-cell video,
+.bg-cell img { width:100%; height:100%; object-fit:contain; background:#000; object-position:center; display:block; }
+
+/* Upload zone floats on top */
+.upload-zone {
+  position:absolute; inset:8px;
+  z-index:1;
+  border:2px dashed #d1d5db;
+  border-radius:12px;
+  background:rgba(255,255,255,0.84);
+  backdrop-filter:blur(8px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  transition:all 0.3s;
+  overflow:hidden;
+}
+.upload-zone:hover { border-color:#2563eb; background:rgba(239,246,255,0.92); }
+.upload-zone.pink:hover { border-color:#ec4899; background:rgba(253,242,248,0.92); }
+.upload-zone.has-file { border-color:#10b981; border-style:solid; }
+.upload-zone.drag-over { border-color:#2563eb; background:rgba(219,234,254,0.9); }
+.upload-zone.pink.drag-over { border-color:#ec4899; background:rgba(252,231,243,0.9); }
+.upload-zone input { display:none; }
+
+.upload-inner {
+  text-align:center; display:flex; flex-direction:column; align-items:center;
+  gap:10px; padding:16px; pointer-events:none; width:100%; height:100%; justify-content:center;
+  position:relative; z-index:1;
+}
+.up-icon { font-size:36px; line-height:1; }
+.up-main { font-size:14px; font-weight:600; }
+.up-main em { color:#2563eb; font-style:normal; }
+.up-main em.pink { color:#ec4899; }
+.up-sub { font-size:11px; color:#9ca3af; margin-top:2px; }
+
+/* Preview wrapper */
+.preview-wrap {
+  position:absolute;
+  inset:0;
+  z-index:2;
+  border-radius:10px;
+  overflow:hidden;
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.preview-wrap img {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000;
+  display:block;
+}
+.preview-wrap video {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center center;
+  display:block;
+}
+
+/* ── SAMPLE STRIP ── */
+.sample-strip {
+  padding:8px 10px 10px;
+  border-top:1px solid #e5e7eb;
+  background:white;
+  flex-shrink:0;
+}
+.strip-label {
+  font-size:10px; font-weight:700; color:#9ca3af;
+  text-transform:uppercase; letter-spacing:0.07em;
+  margin-bottom:6px;
+}
+.strip-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:5px;
+}
+.s-thumb {
+  position:relative;
+  display:block;
+  width:100%;
+  aspect-ratio:4/3;
+  border-radius:8px;
+  overflow:hidden;
+  cursor:pointer;
+  border:2px solid transparent;
+  transition:transform 0.2s, border-color 0.2s;
+  background:#e5e7eb;
+}
+.s-thumb:hover { transform:scale(1.03); }
+.s-thumb.vid-thumb:hover  { border-color:#2563eb; }
+.s-thumb.img-thumb:hover  { border-color:#ec4899; }
+.s-thumb.selected-vid,
+.s-thumb.selected-img     { border-color:#10b981; }
+.s-thumb video,
+.s-thumb img {
+  position:absolute; inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center top;
+  display:block;
+  pointer-events:none;
+}
+.s-thumb::after {
+  content:''; position:absolute; inset:0;
+  background:rgba(0,0,0,0.18);
+  transition:opacity 0.2s;
+  pointer-events:none;
+}
+.s-thumb:hover::after { opacity:0; }
+
+/* ── OUTPUT SECTION ── */
+.section-label { font-size:12px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; }
+.output-zone {
+  width:100%; aspect-ratio:16/6;
+  background:#111827; border-radius:14px;
+  border:1px solid #e5e7eb; overflow:hidden;
+  position:relative; display:flex; align-items:center; justify-content:center;
+  margin-bottom:20px;
+}
+.out-placeholder { text-align:center; color:#9ca3af; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.out-placeholder .p-icon { font-size:38px; opacity:0.45; }
+.out-placeholder p { font-size:13px; line-height:1.6; }
+.out-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+
+/* Progress overlay */
+.prog-overlay {
+  position:absolute; inset:0;
+  background:rgba(17,24,39,0.9);
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+}
+.prog-overlay.show { display:flex; }
+.prog-step-label { font-size:13px; color:#93c5fd; font-weight:600; }
+.prog-bar-bg { width:55%; height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+.prog-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,#2563eb,#7c3aed,#ec4899); border-radius:3px; transition:width 0.18s linear; }
+.prog-pct { font-size:22px; font-weight:700; color:white; }
+
+/* ── ACTION ROW ── */
+.action-row { display:flex; justify-content:flex-end; align-items:center; gap:12px; }
+.btn-generate {
+  padding:12px 30px; background:#2563eb; color:white;
+  border:none; border-radius:9999px; font-size:14px; font-weight:600;
+  cursor:pointer; transition:background 0.2s;
+}
+.btn-generate:hover { background:#1d4ed8; }
+.btn-generate:disabled { background:#93c5fd; cursor:not-allowed; opacity:0.7; }
+.btn-download {
+  display:none; padding:12px 24px; background:#10b981; color:white;
+  border:none; border-radius:9999px; font-size:14px; font-weight:600;
+  cursor:pointer; transition:background 0.2s;
+}
+.btn-download:hover { background:#059669; }
+.btn-download.show { display:inline-block; }
+
+@media(max-width:680px){ .uploads-row{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR — updated to match index.html -->
+<div class="navbar" id="navbar">
+    <a href="/" class="logo">
+        <img src="https://cdn.prod.website-files.com/61ead44637176294fdd344ff/644fcb31ce04e75adce61643_Dictionary_Letters_Knockout-04.svg" alt="Logo" height="35px">
+        <span>Deepfake Guard</span>
+    </a>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <div class="nav-dropdown" id="toolsDropdown">
+            <div class="nav-dropdown-trigger" onclick="toggleDropdown()">
+                Tools
+                <span class="arrow">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 4l4 4 4-4" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            </div>
+            <div class="dropdown-menu">
+                <a href="/generator" class="dropdown-item active-tool">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Video Generator</span>
+                        <span class="dropdown-item-sub">Create deepfake videos</span>
+                    </div>
+                </a>
+                <a href="/voice" class="dropdown-item">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Voice Cloning</span>
+                        <span class="dropdown-item-sub">Clone any voice instantly</span>
+                    </div>
+                </a>
+                <a href="/detector" class="dropdown-item">
+                    <div class="dropdown-item-text">
+                        <span class="dropdown-item-title">Deepfake Detector</span>
+                        <span class="dropdown-item-sub">Detect AI-generated media</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <a href="/about">About</a>
+        <a href="/pricing">Pricing</a>
+    </div>
+    <div class="auth-buttons">
+        <a href="/signup-login"><button class="login">Login</button></a>
+        <a href="/signup-login"><button class="register">SignUp</button></a>
+    </div>
+</div>
+
+<div class="main-container">
+  <div class="content">
+
+    <div class="header">
+      <h1>Generate <span>Deepfake Videos</span></h1>
+      <p>Upload a source video and a face image then generate your deepfake output.</p>
+    </div>
+
+    <!-- ── SIDE-BY-SIDE UPLOADS ── -->
+    <div class="uploads-row">
+
+      <!-- LEFT: VIDEO -->
+      <div class="upload-card">
+        <div class="card-header">
+          <div class="dot dot-blue"></div>
+          <span>Source Video</span>
+          <div class="badge badge-blue">VIDEO</div>
+        </div>
+        <div class="zone-wrapper">
+          <div class="bg-grid" id="bgVideoGrid"></div>
+          <div class="upload-zone" id="videoZone">
+            <input type="file" id="videoInput" accept="video/*">
+            <div class="upload-inner" id="videoInner">
+              <div class="up-icon">▶️</div>
+              <div>
+                <div class="up-main"><em>Click to upload</em> or drag &amp; drop</div>
+                <div class="up-sub">MP4 · WebM · MOV · OGG &nbsp;|&nbsp; Max 50MB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Sample strip: each video wrapped in .s-thumb div so it crops correctly -->
+        <div class="sample-strip">
+          <div class="strip-label">Sample Video</div>
+          <div class="strip-grid" id="videoSampleGrid">
+            <div class="s-thumb vid-thumb" data-src="https://online.mangoanimate.com/mango_ai/videofaceswap/video-face-swap-online.mp4">
+              <video muted autoplay loop playsinline>
+                <source src="https://online.mangoanimate.com/mango_ai/videofaceswap/video-face-swap-online.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="s-thumb vid-thumb" data-src="https://online.mangoanimate.com/mango_ai/videofaceswap/face-swap-video-free.mp4">
+              <video muted autoplay loop playsinline>
+                <source src="https://online.mangoanimate.com/mango_ai/videofaceswap/face-swap-video-free.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="s-thumb vid-thumb" data-src="https://res-intl.jogg.ai/video-convert-dir/6a408aa55141c4567daef416e5c18d82?source=https%3A%2F%2Fres.jogg.ai%2Fupload%2Fsam%2F2025-08-01%2F1f520a1cee8d44db8dfee87bf58b92fc.mp4&cv=libsvtav1&crf=40&r=20">
+              <video muted autoplay loop playsinline>
+                <source src="https://res-intl.jogg.ai/video-convert-dir/6a408aa55141c4567daef416e5c18d82?source=https%3A%2F%2Fres.jogg.ai%2Fupload%2Fsam%2F2025-08-01%2F1f520a1cee8d44db8dfee87bf58b92fc.mp4&cv=libsvtav1&crf=40&r=20" type="video/mp4">
+              </video>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: IMAGE -->
+      <div class="upload-card">
+        <div class="card-header">
+          <div class="dot dot-pink"></div>
+          <span>Face Image</span>
+          <div class="badge badge-pink">IMAGE</div>
+        </div>
+        <div class="zone-wrapper">
+          <div class="bg-grid" id="bgImageGrid"></div>
+          <div class="upload-zone pink" id="imageZone">
+            <input type="file" id="imageInput" accept="image/*">
+            <div class="upload-inner" id="imageInner">
+              <div class="up-icon">🖼️</div>
+              <div>
+                <div class="up-main"><em class="pink">Click to upload</em> or drag &amp; drop</div>
+                <div class="up-sub">JPG · PNG · WEBP · GIF &nbsp;|&nbsp; Max 10MB</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Sample strip: each image wrapped in .s-thumb div -->
+        <div class="sample-strip">
+          <div class="strip-label">Sample Image</div>
+          <div class="strip-grid" id="imageSampleGrid">
+            <div class="s-thumb img-thumb" data-src="https://static-cse.canva.com/blob/2084970/feature_face-swap_slider-showcase2_Image2.jpg">
+              <img src="https://static-cse.canva.com/blob/2084970/feature_face-swap_slider-showcase2_Image2.jpg" alt="Sample 1">
+            </div>
+            <div class="s-thumb img-thumb" data-src="https://img.freepik.com/free-photo/close-up-portrait-curly-handsome-european-male_176532-8133.jpg?semt=ais_user_personalization&w=740&q=80">
+              <img src="https://img.freepik.com/free-photo/close-up-portrait-curly-handsome-european-male_176532-8133.jpg?semt=ais_user_personalization&w=740&q=80" alt="Sample 2">
+            </div>
+            <div class="s-thumb img-thumb" data-src="https://www.denverheadshotco.com/wp-content/uploads/2025/02/unnamed-11.png">
+              <img src="https://www.denverheadshotco.com/wp-content/uploads/2025/02/unnamed-11.png" alt="Sample 3">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── OUTPUT ── -->
+    <div class="section-label">Generated Output</div>
+    <div class="output-zone" id="outputZone">
+      <div class="out-placeholder" id="outPlaceholder">
+        <div class="p-icon">▶️</div>
+        <p>Upload a <strong style="color:#60a5fa;">source video</strong> &amp; a <strong style="color:#f472b6;">face image</strong><br>then click <strong style="color:white;">Generate Video</strong></p>
+      </div>
+      <div class="prog-overlay" id="progOverlay">
+        <div class="prog-pct" id="progPct">0%</div>
+        <div class="prog-bar-bg"><div class="prog-bar-fill" id="progFill"></div></div>
+        <div class="prog-step-label" id="progText">Initializing…</div>
+      </div>
+      <video id="outVideo" class="out-video" style="display:none;" controls></video>
+    </div>
+
+    <!-- ── BUTTONS ── -->
+    <div class="action-row">
+      <button class="btn-download" id="downloadBtn">⬇ Download Video</button>
+      <button class="btn-generate" id="generateBtn" disabled>▶ Generate Video</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const VIDEO_SRCS = [
+  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+];
+const IMG_SRCS = [
+  'https://picsum.photos/seed/portrait1/400/400',
+  'https://picsum.photos/seed/portrait4/400/400',
+  'https://picsum.photos/seed/portrait7/400/400',
+];
+
+let currentVideo = null;
+let currentImage = null;
+
+function checkReady(){
+  document.getElementById('generateBtn').disabled = !(currentVideo && currentImage);
+}
+
+/* ── BG GRIDS ── */
+function buildBgVideo(){
+  const g = document.getElementById('bgVideoGrid');
+  for(let i=0;i<6;i++){
+    const d = document.createElement('div'); d.className='bg-cell';
+    d.innerHTML=`<video src="${VIDEO_SRCS[i%3]}" muted autoplay loop playsinline></video>`;
+    g.appendChild(d);
+  }
+}
+function buildBgImage(){
+  const g = document.getElementById('bgImageGrid');
+  const seeds=['alpha','beta','gamma','delta','epsilon','zeta'];
+  seeds.forEach(s=>{
+    const d = document.createElement('div'); d.className='bg-cell';
+    d.innerHTML=`<img src="https://picsum.photos/seed/${s}/200/150" alt="">`;
+    g.appendChild(d);
+  });
+}
+
+/* ── SET MEDIA — uses .preview-wrap div to clip video/image correctly ── */
+function setVideo(src){
+  currentVideo = src;
+  const zone = document.getElementById('videoZone');
+  zone.querySelectorAll('.preview-wrap').forEach(el=>el.remove());
+  document.getElementById('videoInner').style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.className = 'preview-wrap';
+  const v = document.createElement('video');
+  v.src = src; v.muted = true; v.autoplay = true; v.loop = true; v.playsInline = true;
+  wrap.appendChild(v);
+  zone.appendChild(wrap);
+  zone.classList.add('has-file');
+  checkReady();
+}
+function setImage(src){
+  currentImage = src;
+  const zone = document.getElementById('imageZone');
+  zone.querySelectorAll('.preview-wrap').forEach(el=>el.remove());
+  document.getElementById('imageInner').style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.className = 'preview-wrap';
+  const img = document.createElement('img');
+  img.src = src; img.alt = 'selected face';
+  wrap.appendChild(img);
+  zone.appendChild(wrap);
+  zone.classList.add('has-file');
+  checkReady();
+}
+
+/* ── WIRE UP SAMPLE THUMBNAILS ── */
+document.querySelectorAll('#videoSampleGrid .s-thumb').forEach(thumb => {
+  thumb.addEventListener('click', () => {
+    document.querySelectorAll('#videoSampleGrid .s-thumb').forEach(t=>t.classList.remove('selected-vid'));
+    thumb.classList.add('selected-vid');
+    setVideo(thumb.dataset.src);
+  });
+});
+document.querySelectorAll('#imageSampleGrid .s-thumb').forEach(thumb => {
+  thumb.addEventListener('click', () => {
+    document.querySelectorAll('#imageSampleGrid .s-thumb').forEach(t=>t.classList.remove('selected-img'));
+    thumb.classList.add('selected-img');
+    setImage(thumb.dataset.src);
+  });
+});
+
+/* ── UPLOAD ZONE: VIDEO ── */
+const vz = document.getElementById('videoZone');
+vz.addEventListener('click', e=>{ if(!e.target.closest('.preview-vid')) document.getElementById('videoInput').click(); });
+document.getElementById('videoInput').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(f) setVideo(URL.createObjectURL(f));
+});
+vz.addEventListener('dragover', e=>{ e.preventDefault(); vz.classList.add('drag-over'); });
+vz.addEventListener('dragleave', ()=>vz.classList.remove('drag-over'));
+vz.addEventListener('drop', e=>{
+  e.preventDefault(); vz.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f && f.type.startsWith('video/')) setVideo(URL.createObjectURL(f));
+});
+
+/* ── UPLOAD ZONE: IMAGE ── */
+const iz = document.getElementById('imageZone');
+iz.addEventListener('click', e=>{ if(!e.target.closest('.preview-img')) document.getElementById('imageInput').click(); });
+document.getElementById('imageInput').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>setImage(ev.target.result);
+  reader.readAsDataURL(f);
+});
+iz.addEventListener('dragover', e=>{ e.preventDefault(); iz.classList.add('drag-over'); });
+iz.addEventListener('dragleave', ()=>iz.classList.remove('drag-over'));
+iz.addEventListener('drop', e=>{
+  e.preventDefault(); iz.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f && f.type.startsWith('image/')){
+    const reader=new FileReader();
+    reader.onload=ev=>setImage(ev.target.result);
+    reader.readAsDataURL(f);
+  }
+});
+
+/* ── GENERATE ── */
+document.getElementById('generateBtn').addEventListener('click', ()=>{
+  if(!currentVideo || !currentImage) return;
+  const btn=document.getElementById('generateBtn');
+  btn.disabled=true; btn.textContent='⏳ Processing…';
+  document.getElementById('outPlaceholder').style.display='none';
+  document.getElementById('outVideo').style.display='none';
+  const overlay=document.getElementById('progOverlay');
+  const fill=document.getElementById('progFill');
+  const text=document.getElementById('progText');
+  const pct=document.getElementById('progPct');
+  overlay.classList.add('show');
+  const steps=[
+    [8,'Analyzing source video…'],
+    [22,'Detecting facial landmarks…'],
+    [38,'Mapping face geometry…'],
+    [54,'Running face swap model…'],
+    [68,'Blending & smoothing…'],
+    [82,'Rendering output frames…'],
+    [94,'Encoding final video…'],
+    [100,'Complete ✓'],
+  ];
+  let idx=0;
+  const iv=setInterval(()=>{
+    if(idx>=steps.length){clearInterval(iv);return;}
+    const [p,msg]=steps[idx++];
+    fill.style.width=p+'%'; pct.textContent=p+'%'; text.textContent=msg;
+    if(p===100){
+      clearInterval(iv);
+      setTimeout(()=>{
+        overlay.classList.remove('show');
+        const v=document.getElementById('outVideo');
+        v.src=currentVideo; v.style.display='block'; v.load(); v.play();
+        const dl=document.getElementById('downloadBtn');
+        dl.classList.add('show');
+        dl.onclick=()=>{ const a=document.createElement('a'); a.href=currentVideo; a.download='deepfake_output.mp4'; a.click(); };
+        btn.disabled=false; btn.textContent='▶ Generate Again';
+      },400);
+    }
+  },380);
+});
+
+/* ── NAVBAR SCROLL ── */
+window.addEventListener('scroll', ()=>{
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+});
+
+/* ── DROPDOWN ── */
+function toggleDropdown() {
+  document.getElementById('toolsDropdown').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('toolsDropdown');
+  if (!dd.contains(e.target)) dd.classList.remove('open');
+});
+
+/* ── INIT BG ── */
+buildBgVideo();
+buildBgImage();
+</script>
+</body>
+</html>
